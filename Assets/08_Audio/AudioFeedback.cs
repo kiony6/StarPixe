@@ -4,6 +4,17 @@ using UnityEngine;
 namespace StarPixelSurge.Audio
 {
     /// <summary>
+    /// 音乐强度等级。
+    /// </summary>
+    public enum MusicIntensity
+    {
+        Calm = 0,
+        Battle = 1,
+        Frenzy = 2,
+        Boss = 3
+    }
+
+    /// <summary>
     /// 音频反馈调度器。监听技能、击杀、升级、首领、终极技与波次事件，
     /// 驱动 <see cref="AudioManager"/> 播放对应音效并按波次强度切换 BGM 分段（需求 14）。
     /// </summary>

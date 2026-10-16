@@ -96,5 +96,12 @@ namespace StarPixelSurge.Audio
                 sfxSource.volume = volume;
             }
         }
+
+        /// <summary>设置音乐强度。</summary>
+        public void SetIntensity(int intensity)
+        {
+            // TODO: 根据强度调整BGM
+            Debug.Log($"[AudioManager] 音乐强度: {intensity}");
+        }
     }
 }
