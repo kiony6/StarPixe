@@ -23,6 +23,7 @@ namespace StarPixelSurge.Network
         private readonly RoomService _room = new RoomService();
         private readonly HostMigrationService _migration = new HostMigrationService();
         private readonly List<int> _playersCache = new List<int>();
+        private readonly Dictionary<int, string> _classByPlayer = new Dictionary<int, string>();
 
         private ITransport _transport;
 
@@ -137,10 +138,12 @@ namespace StarPixelSurge.Network
         {
             TearDownTransport();
             _room.Reset();
+            _classByPlayer.Clear();
             RoomId = null;
             IsHost = false;
             LocalPlayerId = -1;
             State = RoomState.Idle;
+            ResetNetworkPlayers();
             OnRosterChanged();
         }
 
@@ -152,13 +155,23 @@ namespace StarPixelSurge.Network
             }
 
             _room.SetReady(LocalPlayerId, ready);
-            _transport?.Broadcast(NetworkSerializer.SerializeReady(LocalPlayerId, ready));
+            _transport?.Broadcast(NetworkSerializer.SerializeReady(LocalPlayerId, ready, GetClassId(LocalPlayerId)));
         }
 
         /// <summary>选择本机职业，开局时随对局参数下发到各客户端。</summary>
         public void SelectClass(string classId)
         {
             LastClassId = classId;
+            if (LocalPlayerId >= 0)
+            {
+                _classByPlayer[LocalPlayerId] = classId;
+            }
+        }
+
+        /// <summary>取指定玩家所选职业 ID，供房主建立对应分身。</summary>
+        public string GetClassId(int playerId)
+        {
+            return _classByPlayer.TryGetValue(playerId, out var classId) ? classId : null;
         }
 
         public bool CanStartMatch()
@@ -202,10 +215,20 @@ namespace StarPixelSurge.Network
         {
             TearDownTransport();
             _room.Reset();
+            _classByPlayer.Clear();
             State = RoomState.Idle;
             IsHost = false;
             LocalPlayerId = -1;
             RoomId = null;
+            ResetNetworkPlayers();
+        }
+
+        private void ResetNetworkPlayers()
+        {
+            if (NetworkPlayerRegistry.HasInstance)
+            {
+                NetworkPlayerRegistry.Instance.Clear();
+            }
         }
 
         private void SetupTransport()
@@ -270,9 +293,13 @@ namespace StarPixelSurge.Network
                     OnMatchStart(payload);
                     break;
                 case NetworkMessageType.PlayerReady:
-                    if (NetworkSerializer.TryDeserializeReady(payload, out var readyPlayer, out var readyValue))
+                    if (NetworkSerializer.TryDeserializeReady(payload, out var readyPlayer, out var readyValue, out var readyClass))
                     {
                         _room.SetReady(readyPlayer, readyValue);
+                        if (!string.IsNullOrEmpty(readyClass))
+                        {
+                            _classByPlayer[readyPlayer] = readyClass;
+                        }
                     }
 
                     break;
@@ -347,6 +374,11 @@ namespace StarPixelSurge.Network
                 }
             }
 
+            if (GameBootstrap.Instance != null)
+            {
+                GameBootstrap.Instance.RefreshNetworkAuthority();
+            }
+
             OnRosterChanged();
         }
 
@@ -370,6 +402,12 @@ namespace StarPixelSurge.Network
                 }
 
                 _transport.Broadcast(NetworkSerializer.SerializeRoster(LocalPlayerId, ids));
+            }
+
+            // 对局进行中房主补齐新加入玩家的分身。
+            if (IsHost && State == RoomState.Playing && GameBootstrap.Instance != null)
+            {
+                GameBootstrap.Instance.EnsureRemoteAvatars();
             }
         }
     }

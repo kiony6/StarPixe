@@ -250,24 +250,26 @@ namespace StarPixelSurge.Network
             }
         }
 
-        /// <summary>序列化玩家准备态。</summary>
-        public static byte[] SerializeReady(int playerId, bool ready)
+        /// <summary>序列化玩家准备态，携带所选职业以便房主建立对应分身。</summary>
+        public static byte[] SerializeReady(int playerId, bool ready, string classId)
         {
-            using (var stream = new MemoryStream(6))
+            using (var stream = new MemoryStream(32))
             using (var writer = new BinaryWriter(stream))
             {
                 writer.Write((byte)NetworkMessageType.PlayerReady);
                 writer.Write(playerId);
                 writer.Write(ready);
+                writer.Write(classId ?? string.Empty);
                 return stream.ToArray();
             }
         }
 
         /// <summary>反序列化玩家准备态。</summary>
-        public static bool TryDeserializeReady(byte[] data, out int playerId, out bool ready)
+        public static bool TryDeserializeReady(byte[] data, out int playerId, out bool ready, out string classId)
         {
             playerId = 0;
             ready = false;
+            classId = null;
             if (data == null || data.Length < 6 || data[0] != (byte)NetworkMessageType.PlayerReady)
             {
                 return false;
@@ -281,6 +283,7 @@ namespace StarPixelSurge.Network
                     reader.ReadByte();
                     playerId = reader.ReadInt32();
                     ready = reader.ReadBoolean();
+                    classId = data.Length > 6 ? reader.ReadString() : null;
                     return true;
                 }
             }

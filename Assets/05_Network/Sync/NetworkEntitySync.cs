@@ -32,7 +32,16 @@ namespace StarPixelSurge.Network
         private readonly List<EntityState> _snapshotScratch = new List<EntityState>();
         private readonly HashSet<int> _seen = new HashSet<int>();
         private readonly List<int> _stale = new List<int>();
-        private int _nextId = 1;
+        private int _nextId = MonsterIdStart;
+
+        /// <summary>
+        /// 玩家实体使用其 PlayerId（0-3）作为网络 ID，因此非玩家实体的 ID
+        /// 从该值起分配，避免与玩家 ID 空间冲突。
+        /// </summary>
+        public const int MonsterIdStart = 100;
+
+        /// <summary>是否为玩家实体 ID（玩家 ID 空间为 0 至 MonsterIdStart-1）。</summary>
+        public static bool IsPlayerEntityId(int entityId) => entityId >= 0 && entityId < MonsterIdStart;
 
         /// <summary>客户端是否渲染远端实体视图。</summary>
         public bool RenderRemoteEntities { get; set; } = true;

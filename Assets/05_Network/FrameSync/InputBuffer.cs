@@ -58,6 +58,37 @@ namespace StarPixelSurge.Network
             return _scratch;
         }
 
+        /// <summary>
+        /// 收集每位玩家不晚于指定帧的最近一次输入。相比精确帧匹配，
+        /// 该方式对丢包与乱序更健壮：输入晚到时仍会在随后的逻辑帧被消费。
+        /// </summary>
+        public IReadOnlyList<PlayerInputPacket> CollectLatest(int frameIndex)
+        {
+            _scratch.Clear();
+            foreach (var frames in _byPlayer.Values)
+            {
+                var found = false;
+                var bestFrame = int.MinValue;
+                var best = default(PlayerInputPacket);
+                foreach (var pair in frames)
+                {
+                    if (pair.Key <= frameIndex && pair.Key > bestFrame)
+                    {
+                        bestFrame = pair.Key;
+                        best = pair.Value;
+                        found = true;
+                    }
+                }
+
+                if (found)
+                {
+                    _scratch.Add(best);
+                }
+            }
+
+            return _scratch;
+        }
+
         /// <summary>裁剪早于指定帧窗口的旧帧，控制内存占用。</summary>
         public void PruneBefore(int frameIndex)
         {

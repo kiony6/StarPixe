@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using StarPixelSurge.Framework;
 using StarPixelSurge.Map;
+using StarPixelSurge.Network;
 using UnityEngine;
 
 namespace StarPixelSurge.GameCore
@@ -88,7 +89,7 @@ namespace StarPixelSurge.GameCore
 
             if (_target == null)
             {
-                _target = PlayerController.Instance != null ? PlayerController.Instance.transform : null;
+                _target = ResolveTarget();
                 if (_target == null)
                 {
                     return;
@@ -140,6 +141,23 @@ namespace StarPixelSurge.GameCore
             return !NavigationService.HasInstance
                    || !NavigationService.Instance.IsReady
                    || NavigationService.Instance.IsWalkable(world);
+        }
+
+        /// <summary>
+        /// 解析追击目标：联机对局优先锁定最近的玩家分身，单机回退到本地玩家控制器。
+        /// </summary>
+        private Transform ResolveTarget()
+        {
+            if (NetworkPlayerRegistry.HasInstance)
+            {
+                var nearest = NetworkPlayerRegistry.Instance.GetClosest(transform.position);
+                if (nearest != null)
+                {
+                    return nearest.transform;
+                }
+            }
+
+            return PlayerController.Instance != null ? PlayerController.Instance.transform : null;
         }
 
         private void Attack()
@@ -293,7 +311,7 @@ namespace StarPixelSurge.GameCore
         {
             _health = maxHealth;
             _attackTimer = 0f;
-            _target = PlayerController.Instance != null ? PlayerController.Instance.transform : null;
+            _target = ResolveTarget();
             if (!Active.Contains(this))
             {
                 Active.Add(this);

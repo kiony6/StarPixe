@@ -16,8 +16,20 @@ namespace StarPixelSurge.GameCore
 
         private Rigidbody2D _rb;
         private Vector2 _moveInput;
+        private bool _networkControlled;
 
         public Vector2 MoveInput => _moveInput;
+
+        /// <summary>位置是否由房主快照驱动（联机客户端本地角色）。</summary>
+        public bool NetworkControlled => _networkControlled;
+
+        /// <summary>
+        /// 切换网络控制。开启后本控制器不再本地位移，位置交由快照插值决定。
+        /// </summary>
+        public void SetNetworkControlled(bool value)
+        {
+            _networkControlled = value;
+        }
 
         private void Awake()
         {
@@ -48,7 +60,7 @@ namespace StarPixelSurge.GameCore
 
         private void FixedUpdate()
         {
-            if (stats == null)
+            if (stats == null || _networkControlled)
             {
                 return;
             }
@@ -71,9 +83,9 @@ namespace StarPixelSurge.GameCore
                 _moveInput.Normalize();
             }
 
-            // 联机客户端上报输入，交由房主权威模拟并广播快照。
+            // 联机对局中上报本地输入：客户端发送到房主；房主写入自身逻辑帧输入缓冲，
+            // 两条路径都经 FrameSyncService.SubmitLocalInput 统一处理。
             if (NetManager.HasInstance
-                && !NetManager.Instance.IsHost
                 && NetManager.Instance.State == RoomState.Playing
                 && FrameSyncService.HasInstance)
             {

@@ -32,6 +32,7 @@ namespace StarPixelSurge.GameCore
         private PlayerController _player;
         private PlayerStats _playerStats;
         private RoomMap _roomMap;
+        private NetworkInputReplay _replay;
         private int _matchSeed;
 
         public PlayerStats PlayerStats => _playerStats;
@@ -96,6 +97,8 @@ namespace StarPixelSurge.GameCore
             {
                 _player.gameObject.SetActive(false);
             }
+
+            ResetNetworkPlayers();
 
             EnsureUi();
             GameplayUIRoot.Instance.ShowClassSelection();
@@ -177,10 +180,110 @@ namespace StarPixelSurge.GameCore
             WaveManager.Instance.SetMonsterPrefab(ResolveMonsterPrefab());
             WaveManager.Instance.SetMap(_roomMap);
 
+            ConfigureNetworkPlayers(mode, runSimulation);
+
             // 客户端不本地生成波次，由房主快照驱动远端实体。
             if (runSimulation)
             {
                 WaveManager.Instance.StartWaves();
+            }
+        }
+
+        /// <summary>
+        /// 联机对局装配：登记本机分身，房主额外为每位玩家建立权威分身并启动输入回放。
+        /// 单机模式不做任何网络相关装配。
+        /// </summary>
+        private void ConfigureNetworkPlayers(MatchMode mode, bool isHost)
+        {
+            if (mode != MatchMode.Multiplayer || !NetManager.HasInstance)
+            {
+                ResetNetworkPlayers();
+                return;
+            }
+
+            var net = NetManager.Instance;
+            var registry = NetworkPlayerRegistry.Instance;
+            registry.Clear();
+            registry.SetMap(_roomMap);
+
+            var localId = net.LocalPlayerId >= 0 ? net.LocalPlayerId : 0;
+            var spawn = _roomMap != null ? _roomMap.StartPosition : Vector2.zero;
+
+            registry.RegisterLocal(_player.gameObject, localId, isHost);
+            _playerStats?.SetMatchFatal(true);
+
+            // 客户端本地角色改由房主快照驱动，关闭本地物理位移避免与快照冲突。
+            _player.SetNetworkControlled(!isHost);
+
+            if (!isHost)
+            {
+                return;
+            }
+
+            EnsureRemoteAvatars(registry, net, localId, spawn);
+
+            if (_replay == null)
+            {
+                _replay = gameObject.AddComponent<NetworkInputReplay>();
+            }
+
+            _replay.Configure(FrameSyncService.Instance, registry);
+        }
+
+        /// <summary>房主补齐当前名册中尚未建立分身的远端玩家。</summary>
+        public void EnsureRemoteAvatars()
+        {
+            if (!NetManager.HasInstance
+                || !NetManager.Instance.IsHost
+                || !NetworkPlayerRegistry.HasInstance)
+            {
+                return;
+            }
+
+            var net = NetManager.Instance;
+            var registry = NetworkPlayerRegistry.Instance;
+            registry.SetMap(_roomMap);
+            var spawn = _roomMap != null ? _roomMap.StartPosition : Vector2.zero;
+            EnsureRemoteAvatars(registry, net, net.LocalPlayerId, spawn);
+        }
+
+        private static void EnsureRemoteAvatars(NetworkPlayerRegistry registry, NetManager net, int localId, Vector2 spawn)
+        {
+            var players = net.Players;
+            for (var i = 0; i < players.Count; i++)
+            {
+                var playerId = players[i];
+                if (playerId == localId || registry.Get(playerId) != null)
+                {
+                    continue;
+                }
+
+                registry.SpawnRemote(playerId, net.GetClassId(playerId), spawn);
+            }
+        }
+
+        /// <summary>房主迁移后重新装配网络权威（新主机接管回放与远端分身）。</summary>
+        public void RefreshNetworkAuthority()
+        {
+            if (!NetManager.HasInstance)
+            {
+                return;
+            }
+
+            ConfigureNetworkPlayers(MatchMode.Multiplayer, NetManager.Instance.IsHost);
+        }
+
+        /// <summary>撤下网络装配，回到纯本地控制（进入单机或大厅时调用）。</summary>
+        private void ResetNetworkPlayers()
+        {
+            if (_player != null)
+            {
+                _player.SetNetworkControlled(false);
+            }
+
+            if (NetworkPlayerRegistry.HasInstance)
+            {
+                NetworkPlayerRegistry.Instance.Clear();
             }
         }
 

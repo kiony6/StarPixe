@@ -1,5 +1,6 @@
 using StarPixelSurge.Framework;
 using StarPixelSurge.GameCore;
+using StarPixelSurge.Network;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -177,7 +178,7 @@ namespace StarPixelSurge.UI
                 return;
             }
 
-            var player = FindObjectOfType<PlayerStats>();
+            var player = ResolveLocalStats();
             if (player == null)
             {
                 return;
@@ -189,6 +190,25 @@ namespace StarPixelSurge.UI
             {
                 _healthText.text = $"{Mathf.CeilToInt(player.CurrentHealth)} / {Mathf.CeilToInt(max)}";
             }
+        }
+
+        /// <summary>
+        /// 解析本机玩家的数值容器。联机对局优先取本地分身，
+        /// 避免误取远端分身导致血条显示其他玩家的生命值。
+        /// </summary>
+        private static PlayerStats ResolveLocalStats()
+        {
+            if (NetworkPlayerRegistry.HasInstance && NetworkPlayerRegistry.Instance.LocalAvatar != null)
+            {
+                return NetworkPlayerRegistry.Instance.LocalAvatar.Stats;
+            }
+
+            if (PlayerController.Instance != null)
+            {
+                return PlayerController.Instance.GetComponent<PlayerStats>();
+            }
+
+            return FindObjectOfType<PlayerStats>();
         }
 
         private void RefreshExperience()

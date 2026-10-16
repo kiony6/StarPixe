@@ -22,6 +22,7 @@ namespace StarPixelSurge.Network
         [SerializeField] private int tickRate = 30;
         [SerializeField] private int snapshotRetain = 32;
         [SerializeField] private int interpolationDelayFrames = 2;
+        [SerializeField] private int inputLeadFrames = 2;
         [SerializeField] private bool gateOnGameState = true;
 
         private ITransport _transport;
@@ -47,6 +48,9 @@ namespace StarPixelSurge.Network
         public InputBuffer Inputs { get; } = new InputBuffer();
 
         public int TickRate => tickRate;
+
+        /// <summary>输入提前量：本地输入提交到未来多少帧，给网络往返留出缓冲。</summary>
+        public int InputLeadFrames => Mathf.Max(1, inputLeadFrames);
 
         /// <summary>房主提供当前权威状态快照的回调。</summary>
         public Func<StateSnapshot> SnapshotProvider { get; set; }
@@ -97,16 +101,30 @@ namespace StarPixelSurge.Network
             _transport.SendToHost(NetworkSerializer.SerializeInput(input));
         }
 
-        /// <summary>客户端便捷上报：以最新确认帧的下一位作为输入帧序号。</summary>
+        /// <summary>
+        /// 便捷上报本地输入。客户端发送到房主；房主直接把输入写入逻辑帧输入缓冲，
+        /// 交由输入回放器在目标帧统一消费，使房主与客户端走同一套确认路径。
+        /// </summary>
         public void SubmitLocalInput(Vector2 moveDir, int skillSlot = -1, bool cast = false)
         {
-            if (Role != NetworkRole.Client || _transport == null)
+            if (_transport == null)
             {
                 return;
             }
 
-            var frame = LatestSnapshotFrame >= 0 ? LatestSnapshotFrame + 1 : 0;
-            SubmitInput(new PlayerInputPacket(_transport.LocalPlayerId, frame, moveDir, skillSlot, cast));
+            if (Role == NetworkRole.Client)
+            {
+                var frame = LatestSnapshotFrame >= 0 ? LatestSnapshotFrame + InputLeadFrames : InputLeadFrames;
+                _transport.SendToHost(NetworkSerializer.SerializeInput(
+                    new PlayerInputPacket(_transport.LocalPlayerId, frame, moveDir, skillSlot, cast)));
+                return;
+            }
+
+            if (Role == NetworkRole.Host)
+            {
+                var frame = CurrentFrameIndex + InputLeadFrames;
+                Inputs.Submit(new PlayerInputPacket(_transport.LocalPlayerId, frame, moveDir, skillSlot, cast));
+            }
         }
 
         /// <summary>房主接收并缓存客户端输入。</summary>
@@ -229,7 +247,7 @@ namespace StarPixelSurge.Network
                 CurrentFrameIndex++;
                 RngState++;
 
-                var inputs = Inputs.CollectForFrame(CurrentFrameIndex);
+                var inputs = Inputs.CollectLatest(CurrentFrameIndex);
                 FrameAdvanced?.Invoke(CurrentFrameIndex, inputs);
 
                 var snapshot = SnapshotProvider.Invoke();

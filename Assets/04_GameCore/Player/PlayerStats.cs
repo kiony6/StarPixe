@@ -54,6 +54,17 @@ namespace StarPixelSurge.GameCore
 
         public bool IsDead => CurrentHealth <= 0f;
 
+        private bool _matchFatal = true;
+
+        /// <summary>
+        /// 该玩家的死亡是否结束整局。本地玩家为 true；
+        /// 联机中其他玩家的分身设为 false，避免远端玩家死亡误判全队失败。
+        /// </summary>
+        public void SetMatchFatal(bool fatal)
+        {
+            _matchFatal = fatal;
+        }
+
         private void Awake()
         {
             if (MaxHealth <= 0f)
@@ -216,7 +227,7 @@ namespace StarPixelSurge.GameCore
             CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
             Broadcast();
 
-            if (IsDead && GameManager.Instance != null)
+            if (IsDead && _matchFatal && GameManager.Instance != null)
             {
                 GameManager.Instance.CompleteMatch();
             }
