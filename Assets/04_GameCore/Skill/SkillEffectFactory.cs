@@ -1,4 +1,5 @@
 using System;
+using StarPixelSurge.Effect;
 using UnityEngine;
 
 namespace StarPixelSurge.GameCore
