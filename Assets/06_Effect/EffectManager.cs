@@ -175,5 +175,13 @@ namespace StarPixelSurge.Effect
         {
             return $"{color.r:F2}{color.g:F2}{color.b:F2}";
         }
+
+        /// <summary>生成爆炸特效。</summary>
+        public void SpawnExplosion(Vector2 position, float radius, Color color)
+        {
+            // 占位：用程序化特效代替
+            var effectId = $"explosion_{color.GetHashCode()}";
+            Play(effectId, position);
+        }
     }
 }
