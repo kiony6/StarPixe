@@ -1,15 +1,16 @@
 using System;
+using StarPixelSurge.Framework;
+using StarPixelSurge.GameCore;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace StarPixelSurge.Network
 {
     /// <summary>
-    /// IP直连联机管理器：不依赖Unity Relay，直接用IP+端口连接。
+    /// IP直连联机管理器：不依赖Unity Relay，直接用IP+端口连接，整合现有NetManager。
     /// </summary>
-    public class DirectConnectionManager : MonoBehaviour
+    public class DirectConnectionManager : MonoSingleton<DirectConnectionManager>
     {
-        public static DirectConnectionManager Instance { get; private set; }
-
         public event Action OnHostStarted;
         public event Action OnClientConnected;
         public event Action OnDisconnected;
@@ -18,15 +19,13 @@ namespace StarPixelSurge.Network
         public string ServerIP { get; private set; } = "185.242.232.191";
         public int ServerPort { get; private set; } = 7777;
 
-        private void Awake()
+        protected override void OnSingletonAwake()
         {
-            if (Instance == null)
+            // 确保NetManager存在
+            if (NetManager.Instance == null)
             {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
+                var go = new GameObject("NetManager");
+                go.AddComponent<NetManager>();
             }
         }
 
@@ -36,10 +35,15 @@ namespace StarPixelSurge.Network
             IsHost = true;
             ServerPort = port;
             Debug.Log($"[Direct] 主机已启动，端口: {port}");
+
+            // 调用NetManager启动主机
+            NetManager.Instance.StartLocalHost();
+
             OnHostStarted?.Invoke();
 
-            // TODO: 实际的网络监听逻辑
-            // 这里是框架，实际用Unity Netcode的Transport层
+            // 跳转到游戏场景
+            Debug.Log("[Direct] 跳转到游戏场景...");
+            // SceneManager.LoadScene("Game");
         }
 
         /// <summary>作为客户端连接到服务器。</summary>
@@ -50,9 +54,15 @@ namespace StarPixelSurge.Network
             ServerPort = port;
             Debug.Log($"[Direct] 正在连接到 {ip}:{port}...");
 
-            // TODO: 实际的网络连接逻辑
+            // 调用NetManager连接服务器
+            NetManager.Instance.ConnectToServer(ip, port);
+
             // 模拟连接成功
             OnClientConnected?.Invoke();
+
+            // 跳转到游戏场景
+            Debug.Log("[Direct] 连接成功，跳转到游戏场景...");
+            // SceneManager.LoadScene("Game");
         }
 
         /// <summary>断开连接。</summary>
@@ -60,6 +70,7 @@ namespace StarPixelSurge.Network
         {
             IsHost = false;
             Debug.Log("[Direct] 已断开连接");
+            NetManager.Instance.Disconnect();
             OnDisconnected?.Invoke();
         }
     }

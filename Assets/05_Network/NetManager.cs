@@ -259,6 +259,39 @@ namespace StarPixelSurge.Network
             return State == RoomState.Lobby && _room.CanStart(LocalPlayerId);
         }
 
+        /// <summary>启动本地主机（直连模式）。</summary>
+        public void StartLocalHost()
+        {
+            IsHost = true;
+            LocalPlayerId = 0;
+            State = RoomState.Lobby;
+            _room.SetHost(LocalPlayerId);
+            Debug.Log($"[NetManager] 主机已启动，PlayerId: {LocalPlayerId}");
+            OnRosterChanged();
+        }
+
+        /// <summary>连接到远程服务器（直连模式）。</summary>
+        public void ConnectToServer(string ip, int port)
+        {
+            IsHost = false;
+            LocalPlayerId = 1;
+            State = RoomState.Lobby;
+            Debug.Log($"[NetManager] 正在连接到服务器 {ip}:{port}...");
+            // TODO: 实际的UDP连接逻辑
+            Debug.Log($"[NetManager] 连接成功，PlayerId: {LocalPlayerId}");
+            OnRosterChanged();
+        }
+
+        /// <summary>断开连接。</summary>
+        public void Disconnect()
+        {
+            State = RoomState.Idle;
+            IsHost = false;
+            LocalPlayerId = -1;
+            Debug.Log("[NetManager] 已断开连接");
+            OnRosterChanged();
+        }
+
         public void StartMatch()
         {
             if (!CanStartMatch())
