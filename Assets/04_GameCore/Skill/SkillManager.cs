@@ -179,6 +179,7 @@ namespace StarPixelSurge.GameCore
                 EffectManager.Instance.Play(config.EffectId, _player.position);
             }
 
+            EventBus.Publish(new SkillCastEvent(config.Id, _player.position));
             return true;
         }
 

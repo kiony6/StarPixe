@@ -1,3 +1,4 @@
+using StarPixelSurge.Audio;
 using StarPixelSurge.Effect;
 using StarPixelSurge.GameCore;
 using StarPixelSurge.Map;
@@ -25,11 +26,13 @@ namespace StarPixelSurge.Framework
             {
                 EnsureCamera();
                 EnsureEffectSystems();
+                EnsureAudioSystems();
                 return;
             }
 
             EnsureCamera();
             EnsureEffectSystems();
+            EnsureAudioSystems();
 
             var go = new GameObject("GameBootstrap");
             go.AddComponent<GameBootstrap>();
@@ -73,6 +76,17 @@ namespace StarPixelSurge.Framework
                 var go = new GameObject("EffectSystems");
                 go.AddComponent<GraphicsTierController>();
                 go.AddComponent<HitFeedback>();
+            }
+        }
+
+        /// <summary>装配音频系统：音频管理器与音频反馈调度器。</summary>
+        private static void EnsureAudioSystems()
+        {
+            if (!AudioManager.HasInstance)
+            {
+                var go = new GameObject("AudioSystems");
+                go.AddComponent<AudioManager>();
+                go.AddComponent<AudioFeedback>();
             }
         }
     }

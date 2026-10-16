@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using StarPixelSurge.Audio;
 using StarPixelSurge.Config;
 using StarPixelSurge.Effect;
 using StarPixelSurge.GameCore;
@@ -45,6 +46,10 @@ namespace StarPixelSurge.EditorTools
             var effectsGo = new GameObject("EffectSystems");
             effectsGo.AddComponent<GraphicsTierController>();
             effectsGo.AddComponent<HitFeedback>();
+
+            var audioGo = new GameObject("AudioSystems");
+            audioGo.AddComponent<AudioManager>();
+            audioGo.AddComponent<AudioFeedback>();
 
             var bootstrapGo = new GameObject("GameBootstrap");
             bootstrapGo.AddComponent<GameBootstrap>();

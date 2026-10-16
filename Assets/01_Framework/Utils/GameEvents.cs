@@ -187,4 +187,17 @@ namespace StarPixelSurge.Framework
             Tier = tier;
         }
     }
+
+    /// <summary>技能成功释放，用于播放对应音效。</summary>
+    public readonly struct SkillCastEvent
+    {
+        public readonly string SkillId;
+        public readonly Vector2 Position;
+
+        public SkillCastEvent(string skillId, Vector2 position)
+        {
+            SkillId = skillId;
+            Position = position;
+        }
+    }
 }
