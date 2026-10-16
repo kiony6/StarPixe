@@ -11,7 +11,7 @@ namespace StarPixelSurge.UI
     {
         private RectTransform _panel;
         private Text _titleText;
-        private Transform _choiceContainer;
+        private RectTransform _choiceContainer;
         private Button _closeButton;
 
         private System.Action<int> _onChoiceSelected;

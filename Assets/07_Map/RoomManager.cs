@@ -48,7 +48,7 @@ namespace StarPixelSurge.GameCore
             var centerRoom = new RoomData
             {
                 Id = "room_0",
-                Type = RoomType.Combat,
+                Type = RoomType.Start,
                 Position = Vector2Int.zero,
                 IsCleared = false
             };
