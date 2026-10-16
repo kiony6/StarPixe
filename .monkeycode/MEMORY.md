@@ -62,3 +62,12 @@ Entries discovered by the Agent during task execution should follow this format:
   - `tools/run-unity-checks.sh` is the single entry point for local verification; targets `all|compile|simulation|udp`, and it needs `UNITY_BIN` pointing at the Unity executable. The environment here has no Unity binary, so the script can only be syntax-checked (`bash -n`), not run.
   - Runtime visuals resolve through `SpriteCatalog.Resolve(category, id, fallbackColor, fallbackShape, fallbackSize)`: real sprite from `Assets/11_Res/Resources/Sprites/<category>/<id>` if present, otherwise a procedural `RuntimeSprite` placeholder. Keep this fallback contract when adding art so the game runs with or without assets.
   - Pixel-art import params are applied in bulk via menu `StarPixelSurge/Assets/Apply Sprite Import Settings`, and auto-applied to new textures by `SpriteImportPostprocessor`. Naming/category/import conventions live in `Assets/11_Res/Sprites/README.md`.
+
+[Project Knowledge Summary]
+- Date: 2026-10-16
+- Context: Discovered by Agent while implementing the effect/feedback and graphics-tier module (requirements 3 and 10)
+- Category: Environment Configuration | Troubleshooting & Debugging
+- Instructions:
+  - Effect feel is driven by three systems under `06_Effect`: `CameraFeedback` (shake/flash/freeze, must sit on the main camera; `CameraFollow` reads its `Offset`), `HitFeedback` (subscribes `DamageDealtEvent`/`UltimateTriggeredEvent`/boss events), and `GraphicsTierController` (holds `GraphicsTier`, samples fps, advises a lower tier). `AutoBootstrap.EnsureEffectSystems` creates the latter two at boot.
+  - In play mode, press `F10` to cycle the graphics tier (low/standard/ultra) and see the tier name on the HUD; this is a test-period hotkey that a settings screen will replace.
+  - Effects render through `EffectManager.Play(effectId, position, tier)`: a registered prefab is used when present, otherwise a tier-scaled procedural burst (1/2/3 layers). The project has no post-processing stack, so exposure/color grading is emulated with a full-screen overlay flash.
