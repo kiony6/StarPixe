@@ -15,7 +15,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('all', 'compile', 'validate', 'simulation', 'udp')]
+    [ValidateSet('all', 'compile', 'validate', 'simulation', 'udp', 'build')]
     [string]$Target = 'all',
 
     [string]$UnityPath = $env:UNITY_BIN,
@@ -26,7 +26,10 @@ param(
     [double]$UdpJitter = 0.03,
     [double]$UdpLossRate = 0.05,
 
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+
+    [switch]$BuildDevelopment,
+    [string]$BuildPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -149,6 +152,14 @@ switch ($Target) {
         $results['udp'] = Invoke-UnityStage -Name 'udp' `
             -ExecuteMethod 'StarPixelSurge.EditorTools.UdpTwoProcessTestRunner.RunFromCommandLine' `
             -ExtraArgs $udpArgs
+    }
+    'build' {
+        $buildArgs = @()
+        if ($BuildDevelopment) { $buildArgs += '-buildDev' }
+        if ($BuildPath) { $buildArgs += @('-buildPath', $BuildPath) }
+        $results['build'] = Invoke-UnityStage -Name 'build' `
+            -ExecuteMethod 'StarPixelSurge.EditorTools.WindowsBuildTool.BuildFromCommandLine' `
+            -ExtraArgs $buildArgs
     }
     'all' {
         $results['compile'] = Invoke-UnityStage -Name 'compile' `
