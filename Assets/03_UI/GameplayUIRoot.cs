@@ -24,6 +24,7 @@ namespace StarPixelSurge.UI
         private UpgradeSelectionView _upgrade;
         private AffixPreviewView _affixPreview;
         private ResultView _result;
+        private CollectionView _collection;
 
         private void Awake()
         {
@@ -105,6 +106,10 @@ namespace StarPixelSurge.UI
             _result = CreateView<ResultView>("ResultView");
             _result.Build(_canvas.transform);
             UIManager.Instance.Register(_result);
+
+            _collection = CreateView<CollectionView>("CollectionView");
+            _collection.Build(_canvas.transform);
+            UIManager.Instance.Register(_collection);
         }
 
         private T CreateView<T>(string name) where T : UIView

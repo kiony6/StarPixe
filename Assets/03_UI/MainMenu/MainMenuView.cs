@@ -42,6 +42,10 @@ namespace StarPixelSurge.UI
             var leaderboardButton = UiFactory.CreateButton(panel.transform, "LeaderboardButton", "排行榜", new Color(0.6f, 0.5f, 0.2f), OnLeaderboardClicked);
             UiFactory.SetAnchoredRect(leaderboardButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -210f), new Vector2(200f, 40f));
 
+            // 图鉴按钮
+            var collectionButton = UiFactory.CreateButton(panel.transform, "CollectionButton", "图鉴", new Color(0.3f, 0.6f, 0.4f), OnCollectionClicked);
+            UiFactory.SetAnchoredRect(collectionButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -270f), new Vector2(200f, 40f));
+
             RefreshData(playerNameText, highScoreText);
         }
 
@@ -81,6 +85,11 @@ namespace StarPixelSurge.UI
         private void OnLeaderboardClicked()
         {
             UIManager.Instance.Open<LeaderboardView>();
+        }
+
+        private void OnCollectionClicked()
+        {
+            UIManager.Instance.Open<CollectionView>();
         }
     }
 }
