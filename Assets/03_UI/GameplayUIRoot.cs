@@ -11,6 +11,7 @@ namespace StarPixelSurge.UI
         public static GameplayUIRoot Instance { get; private set; }
 
         private Canvas _canvas;
+        private ClassSelectionView _classSelection;
         private HudView _hud;
         private UpgradeSelectionView _upgrade;
         private ResultView _result;
@@ -44,6 +45,10 @@ namespace StarPixelSurge.UI
             UiFactory.EnsureEventSystem();
             _canvas = UiFactory.CreateCanvas("GameplayCanvas", 100);
 
+            _classSelection = CreateView<ClassSelectionView>("ClassSelectionView");
+            _classSelection.Build(_canvas.transform);
+            UIManager.Instance.Register(_classSelection);
+
             _hud = CreateView<HudView>("HudView");
             _hud.Build(_canvas.transform);
             UIManager.Instance.Register(_hud);
@@ -66,6 +71,7 @@ namespace StarPixelSurge.UI
 
         private void OnMatchStarted(MatchStartedEvent evt)
         {
+            UIManager.Instance.Close<ClassSelectionView>();
             UIManager.Instance.Close<ResultView>();
             UIManager.Instance.Open<HudView>();
         }
@@ -73,6 +79,13 @@ namespace StarPixelSurge.UI
         private void OnMatchEnded(MatchEndedEvent evt)
         {
             UIManager.Instance.Close<HudView>();
+        }
+
+        public void ShowClassSelection()
+        {
+            UIManager.Instance.Close<HudView>();
+            UIManager.Instance.Close<ResultView>();
+            UIManager.Instance.Open<ClassSelectionView>();
         }
 
         public HudView Hud => _hud;

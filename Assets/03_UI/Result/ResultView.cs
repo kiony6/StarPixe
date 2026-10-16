@@ -29,7 +29,10 @@ namespace StarPixelSurge.UI
             UiFactory.SetAnchoredRect(_statsText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -20f), new Vector2(-80f, -200f));
 
             var restart = UiFactory.CreateButton(panel.transform, "RestartButton", "再来一局", new Color(0.2f, 0.6f, 0.9f), OnRestart);
-            UiFactory.SetAnchoredRect(restart.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 50f), new Vector2(300f, 72f));
+            UiFactory.SetAnchoredRect(restart.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-160f, 50f), new Vector2(280f, 72f));
+
+            var lobby = UiFactory.CreateButton(panel.transform, "LobbyButton", "返回大厅", new Color(0.35f, 0.35f, 0.45f), OnReturnToLobby);
+            UiFactory.SetAnchoredRect(lobby.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(160f, 50f), new Vector2(280f, 72f));
 
             OnClose();
         }
@@ -77,6 +80,15 @@ namespace StarPixelSurge.UI
             if (GameBootstrap.Instance != null)
             {
                 GameBootstrap.Instance.RestartMatch();
+            }
+        }
+
+        private void OnReturnToLobby()
+        {
+            UIManager.Instance.PopModal();
+            if (GameBootstrap.Instance != null)
+            {
+                GameBootstrap.Instance.EnterLobby();
             }
         }
     }

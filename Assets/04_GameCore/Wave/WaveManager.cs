@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using StarPixelSurge.Config;
 using StarPixelSurge.Framework;
+using StarPixelSurge.Map;
 using UnityEngine;
 
 namespace StarPixelSurge.GameCore
@@ -45,6 +46,7 @@ namespace StarPixelSurge.GameCore
         [SerializeField] private float baseMonsterExperience = 1f;
 
         private Transform _player;
+        private RoomMap _map;
         private readonly Queue<SpawnRequest> _spawnQueue = new Queue<SpawnRequest>();
         private float _layerTimer;
         private bool _running;
@@ -54,6 +56,11 @@ namespace StarPixelSurge.GameCore
         public void SetPlayer(Transform player)
         {
             _player = player;
+        }
+
+        public void SetMap(RoomMap map)
+        {
+            _map = map;
         }
 
         public void SetMonsterPrefab(GameObject prefab)
@@ -179,6 +186,11 @@ namespace StarPixelSurge.GameCore
             var angle = Random.Range(0f, Mathf.PI * 2f);
             var offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * spawnRadius;
             var position = (Vector2)_player.position + offset;
+
+            if (_map != null)
+            {
+                position = _map.GetSpawnPosition(_player.position, spawnRadius);
+            }
 
             var instance = PoolManager.Instance.Spawn(monsterPrefab, position, Quaternion.identity);
             var monster = instance.GetComponent<MonsterController>();

@@ -1,13 +1,14 @@
 using StarPixelSurge.Config;
 using StarPixelSurge.Framework;
+using StarPixelSurge.Map;
 using StarPixelSurge.UI;
 using UnityEngine;
 
 namespace StarPixelSurge.GameCore
 {
     /// <summary>
-    /// 对局启动入口。装配玩家、技能、波次、UI 并开始一场单机无尽对局。
-    /// 未在 Inspector 指定预制体时自动构建运行时占位对象，保证空场景可直接运行。
+    /// 对局启动入口。默认先进入职业选择大厅，选定职业后生成随机房间地图并开始一场单机无尽对局。
+    /// 未在 Inspector 指定预制体或配置时自动构建运行时占位对象，保证空场景可直接运行。
     /// </summary>
     public class GameBootstrap : MonoBehaviour
     {
@@ -15,19 +16,28 @@ namespace StarPixelSurge.GameCore
 
         private const string DefaultClassId = "thunder_mage";
         private const string DefaultSkillId = "lightning_orb";
+        private const string DefaultRoomMapResourcePath = "Config/RoomMapConfig_neon_city";
 
         [SerializeField] private PlayerController playerPrefab;
         [SerializeField] private GameObject monsterPrefab;
+        [SerializeField] private RoomMapConfig roomMapConfig;
         [SerializeField] private string startingClassId;
         [SerializeField] private string startingSkillId;
+        [SerializeField] private bool showClassSelection = true;
         [SerializeField] private bool autoStartOnPlay = true;
         [SerializeField] private bool buildGameplayUi = true;
 
         private GameObject _runtimeMonsterTemplate;
         private PlayerController _player;
         private PlayerStats _playerStats;
+        private RoomMap _roomMap;
+        private int _matchSeed;
 
         public PlayerStats PlayerStats => _playerStats;
+
+        public RoomMap RoomMap => _roomMap;
+
+        public string LastClassId { get; private set; }
 
         private void Awake()
         {
@@ -44,37 +54,85 @@ namespace StarPixelSurge.GameCore
 
         private void Start()
         {
-            if (autoStartOnPlay)
+            if (!autoStartOnPlay)
+            {
+                return;
+            }
+
+            if (showClassSelection)
+            {
+                EnterLobby();
+            }
+            else
             {
                 StartSinglePlayer();
             }
         }
 
-        public void StartSinglePlayer()
+        /// <summary>进入职业选择大厅。</summary>
+        public void EnterLobby()
         {
+            WaveManager.Instance.StopWaves();
+
             if (PoolManager.HasInstance)
             {
                 PoolManager.Instance.DespawnAll();
             }
 
-            var classId = ResolveClassId();
+            DestroyRoomMap();
+
+            if (_player != null)
+            {
+                _player.gameObject.SetActive(false);
+            }
+
+            EnsureUi();
+            GameplayUIRoot.Instance.ShowClassSelection();
+            GameManager.Instance.ReturnToMainMenu();
+        }
+
+        public void StartSinglePlayer()
+        {
+            StartSinglePlayer(ResolveClassId());
+        }
+
+        public void StartSinglePlayer(string classId)
+        {
+            if (string.IsNullOrEmpty(classId))
+            {
+                classId = ResolveClassId();
+            }
+
+            LastClassId = classId;
+
+            if (PoolManager.HasInstance)
+            {
+                PoolManager.Instance.DespawnAll();
+            }
+
+            WaveManager.Instance.StopWaves();
+
+            var classConfig = ConfigService.Instance.GetClass(classId);
+            _matchSeed = Random.Range(int.MinValue, int.MaxValue);
+
+            BuildRoomMap();
 
             if (_player == null)
             {
                 _player = CreatePlayer();
             }
 
-            _player.transform.position = Vector3.zero;
-            _playerStats = _player.GetComponent<PlayerStats>();
+            _player.gameObject.SetActive(true);
+            var spawn = _roomMap != null ? _roomMap.StartPosition : Vector2.zero;
+            _player.transform.position = new Vector3(spawn.x, spawn.y, 0f);
 
-            var classConfig = ConfigService.Instance.GetClass(classId);
+            _playerStats = _player.GetComponent<PlayerStats>();
             _playerStats?.Initialize(classConfig);
             _player.GetComponent<PlayerExperience>()?.ResetProgress();
 
             EnsureUi();
 
-            var seed = Random.Range(int.MinValue, int.MaxValue);
-            GameManager.Instance.StartMatch(MatchConfig.SinglePlayer(classId, seed));
+            GameManager.Instance.StartMatch(MatchConfig.SinglePlayer(classId, _matchSeed));
 
             SkillManager.Instance.ResetAll();
             SkillManager.Instance.SetPlayer(_player.transform);
@@ -88,14 +146,52 @@ namespace StarPixelSurge.GameCore
 
             WaveManager.Instance.SetPlayer(_player.transform);
             WaveManager.Instance.SetMonsterPrefab(ResolveMonsterPrefab());
+            WaveManager.Instance.SetMap(_roomMap);
             WaveManager.Instance.StartWaves();
         }
 
-        /// <summary>重开一局：清空对象池与波次，重置技能后从头开始。</summary>
+        /// <summary>重开一局：使用上一次职业重新生成地图并开局。</summary>
         public void RestartMatch()
         {
-            WaveManager.Instance.StopWaves();
-            StartSinglePlayer();
+            StartSinglePlayer(string.IsNullOrEmpty(LastClassId) ? ResolveClassId() : LastClassId);
+        }
+
+        private void BuildRoomMap()
+        {
+            DestroyRoomMap();
+
+            var config = ResolveRoomMapConfig();
+            if (config == null)
+            {
+                return;
+            }
+
+            _roomMap = MapGenerator.Generate(config, _matchSeed, null);
+        }
+
+        private void DestroyRoomMap()
+        {
+            if (_roomMap != null)
+            {
+                Destroy(_roomMap.gameObject);
+                _roomMap = null;
+            }
+        }
+
+        private RoomMapConfig ResolveRoomMapConfig()
+        {
+            if (roomMapConfig != null)
+            {
+                return roomMapConfig;
+            }
+
+            var all = Resources.LoadAll<RoomMapConfig>("Config");
+            if (all != null && all.Length > 0)
+            {
+                return all[0];
+            }
+
+            return Resources.Load<RoomMapConfig>(DefaultRoomMapResourcePath);
         }
 
         private void EnsureUi()
@@ -176,7 +272,7 @@ namespace StarPixelSurge.GameCore
             body.freezeRotation = true;
 
             var collider = go.AddComponent<CircleCollider2D>();
-            collider.radius = 0.4f;
+            collider.radius = 0.35f;
 
             go.AddComponent<PlayerStats>();
             go.AddComponent<PlayerExperience>();
