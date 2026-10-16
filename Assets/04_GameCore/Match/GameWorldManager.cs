@@ -20,7 +20,7 @@ namespace StarPixelSurge.GameCore
         [SerializeField] private Color groundColor = new Color(0.1f, 0.12f, 0.15f);
 
         private GameObject _playerInstance;
-        private readonly System.List<GameObject> _monsterInstances = new System.List<GameObject>();
+        private readonly List<GameObject> _monsterInstances = new List<GameObject>();
 
         protected override void OnSingletonAwake()
         {
