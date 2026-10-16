@@ -68,11 +68,44 @@ namespace StarPixelSurge.EditorTools
         [MenuItem("StarPixelSurge/Setup/Validate Configs")]
         public static void ValidateConfigs()
         {
+            Validate(out var summary);
+            if (_lastValidateOk)
+            {
+                Debug.Log(summary);
+            }
+            else
+            {
+                Debug.LogError(summary);
+            }
+        }
+
+        /// <summary>batchmode 入口：配置校验失败时以非零码退出。</summary>
+        public static void ValidateFromCommandLine()
+        {
+            var ok = Validate(out var summary);
+            if (ok)
+            {
+                Debug.Log(summary);
+            }
+            else
+            {
+                Debug.LogError(summary);
+            }
+
+            EditorApplication.Exit(ok ? 0 : 1);
+        }
+
+        private static bool _lastValidateOk;
+
+        private static bool Validate(out string summary)
+        {
+            var problems = 0;
             var database = AssetDatabase.LoadAssetAtPath<ConfigDatabase>(DatabasePath);
             if (database == null)
             {
-                Debug.LogError($"[StarPixelSurge] ConfigDatabase not found at {DatabasePath}");
-                return;
+                _lastValidateOk = false;
+                summary = $"[StarPixelSurge] ConfigDatabase not found at {DatabasePath}";
+                return false;
             }
 
             var skillIds = new HashSet<string>();
@@ -94,11 +127,13 @@ namespace StarPixelSurge.EditorTools
 
                 if (!affixIds.Add(affix.Id))
                 {
+                    problems++;
                     Debug.LogWarning($"[StarPixelSurge] Duplicate affix id: {affix.Id}");
                 }
 
                 if (!KnownStatKeys.Contains(affix.StatKey))
                 {
+                    problems++;
                     Debug.LogWarning($"[StarPixelSurge] Affix {affix.Id} uses unknown stat key: {affix.StatKey}");
                 }
             }
@@ -113,16 +148,19 @@ namespace StarPixelSurge.EditorTools
 
                 if (!classIds.Add(classConfig.Id))
                 {
+                    problems++;
                     Debug.LogWarning($"[StarPixelSurge] Duplicate class id: {classConfig.Id}");
                 }
 
                 if (!string.IsNullOrEmpty(classConfig.StartingSkillId) && !skillIds.Contains(classConfig.StartingSkillId))
                 {
+                    problems++;
                     Debug.LogWarning($"[StarPixelSurge] Class {classConfig.Id} starting skill missing: {classConfig.StartingSkillId}");
                 }
 
                 if (classConfig.SkillPool == null || classConfig.SkillPool.Length == 0)
                 {
+                    problems++;
                     Debug.LogWarning($"[StarPixelSurge] Class {classConfig.Id} has an empty skill pool.");
                 }
 
@@ -130,6 +168,7 @@ namespace StarPixelSurge.EditorTools
                 {
                     if (!skillIds.Contains(skillId))
                     {
+                        problems++;
                         Debug.LogWarning($"[StarPixelSurge] Class {classConfig.Id} pool skill missing: {skillId}");
                     }
                 }
@@ -140,6 +179,7 @@ namespace StarPixelSurge.EditorTools
             {
                 if (mapTheme != null && !mapThemeIds.Add(mapTheme.Id))
                 {
+                    problems++;
                     Debug.LogWarning($"[StarPixelSurge] Duplicate map theme id: {mapTheme.Id}");
                 }
             }
@@ -163,6 +203,7 @@ namespace StarPixelSurge.EditorTools
 
                 if (!skillIds.Contains(combo.SkillA) || !skillIds.Contains(combo.SkillB))
                 {
+                    problems++;
                     Debug.LogWarning($"[StarPixelSurge] Combo {combo.Id} references missing skill(s).");
                 }
 
@@ -171,6 +212,7 @@ namespace StarPixelSurge.EditorTools
                     : combo.SkillB + "+" + combo.SkillA;
                 if (!comboPairs.Add(key))
                 {
+                    problems++;
                     Debug.LogWarning($"[StarPixelSurge] Duplicate combo skill pair: {key} ({combo.Id})");
                 }
             }
@@ -184,7 +226,9 @@ namespace StarPixelSurge.EditorTools
                 }
             }
 
-            Debug.Log($"[StarPixelSurge] Validate done. Skills={database.Skills.Length}, Affixes={database.Affixes.Length}, Combos={database.Combos.Length}, Classes={database.Classes.Length}, Waves={database.Waves.Length}, MapThemes={database.MapThemes.Length}, MissingLayers(1-10)={firstMissing}");
+            _lastValidateOk = problems == 0 && firstMissing == 0;
+            summary = $"[StarPixelSurge] Validate done. Skills={database.Skills.Length}, Affixes={database.Affixes.Length}, Combos={database.Combos.Length}, Classes={database.Classes.Length}, Waves={database.Waves.Length}, MapThemes={database.MapThemes.Length}, MissingLayers(1-10)={firstMissing}, Problems={problems}, {( _lastValidateOk ? "PASS" : "FAIL")}";
+            return _lastValidateOk;
         }
 
         private static readonly HashSet<string> KnownStatKeys = new HashSet<string>

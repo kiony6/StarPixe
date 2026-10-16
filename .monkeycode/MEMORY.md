@@ -91,3 +91,13 @@ Entries discovered by the Agent during task execution should follow this format:
   - Audio falls back to procedural `RuntimeTone` clips (tone/pad) when no real clip is registered, mirroring the `SpriteCatalog`/`RuntimeSprite` contract, so the game is audible before audio assets are imported. Register real clips via `AudioManager.RegisterBgm`/`RegisterSfx`, keeping the `Sfx*` id constants and the `MusicIntensity` segments as the interface.
   - Config `.asset` **Ids are save-facing and must stay stable**: saves persist unlocked class ids (`thunder_mage` etc.), so realign display names, roles and skill pools freely, but never rename an existing Id. New content gets a new id plus a `ConfigDatabase` reference.
   - Validate configs from the editor menu `StarPixelSurge/Setup/Validate Configs`; it checks id uniqueness, class/starting-skill and combo skill references against the skill table, combo pair uniqueness, affix stat keys, and reports per-collection counts.
+
+[Project Knowledge Summary]
+- Date: 2026-10-16
+- Context: Discovered by Agent while adding the Windows one-command local verification entry point
+- Category: Build Methods | Testing Methods | Environment Configuration
+- Instructions:
+  - Windows users verify the project with `tools\local-deploy.cmd [all|compile|validate|simulation|udp]` (wrapper over `tools\local-deploy.ps1`), or call the PowerShell script directly. It auto-detects Unity from `UNITY_BIN` / Unity Hub defaults (`%ProgramFiles%\Unity\Hub\Editor\<version>\Editor\Unity.exe`), and `-UnityPath` overrides it.
+  - There is no shell-out to `realpath`/`cd`: the script recomputes the repo root from `$PSScriptRoot`, so it can be run from any working directory.
+  - Headless config validation entry point: `-executeMethod StarPixelSurge.EditorTools.StarPixelSurgeSetup.ValidateFromCommandLine` (exit 0 only when there are no duplicate/missing references/unknown stat keys and wave layers 1-10 all exist).
+  - Cross-platform: `tools/run-unity-checks.sh` remains the bash/Linux/macOS equivalent.
