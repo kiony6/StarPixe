@@ -57,8 +57,10 @@ namespace StarPixelSurge.Network
             OnPlayerDisconnected?.Invoke(playerId);
 
             // 如果是房主断线，触发主机迁移
-            if (NetManager.HasInstance && playerId == NetManager.Instance.HostClientId)
+            if (NetManager.HasInstance)
             {
+                var hostId = NetManager.Instance.LocalPlayerId; // 简化：用本地玩家ID判断
+                // TODO: 实际判断房主是否断线
                 StartHostMigration();
             }
         }

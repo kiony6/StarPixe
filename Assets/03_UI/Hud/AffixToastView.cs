@@ -77,9 +77,22 @@ namespace StarPixelSurge.UI
             // 动画效果：淡入
             var canvasGroup = go.AddComponent<CanvasGroup>();
             canvasGroup.alpha = 0f;
-            LeanTween.alphaCanvas(canvasGroup, 1f, 0.3f);
+            // 简单的淡入效果（不用LeanTween）
+            StartCoroutine(FadeIn(canvasGroup, 0.3f));
 
             return go;
+        }
+
+        private System.Collections.IEnumerator FadeIn(CanvasGroup group, float duration)
+        {
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                group.alpha = Mathf.Clamp01(t / duration);
+                yield return null;
+            }
+            group.alpha = 1f;
         }
     }
 }
