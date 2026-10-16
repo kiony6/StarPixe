@@ -71,3 +71,13 @@ Entries discovered by the Agent during task execution should follow this format:
   - Effect feel is driven by three systems under `06_Effect`: `CameraFeedback` (shake/flash/freeze, must sit on the main camera; `CameraFollow` reads its `Offset`), `HitFeedback` (subscribes `DamageDealtEvent`/`UltimateTriggeredEvent`/boss events), and `GraphicsTierController` (holds `GraphicsTier`, samples fps, advises a lower tier). `AutoBootstrap.EnsureEffectSystems` creates the latter two at boot.
   - In play mode, press `F10` to cycle the graphics tier (low/standard/ultra) and see the tier name on the HUD; this is a test-period hotkey that a settings screen will replace.
   - Effects render through `EffectManager.Play(effectId, position, tier)`: a registered prefab is used when present, otherwise a tier-scaled procedural burst (1/2/3 layers). The project has no post-processing stack, so exposure/color grading is emulated with a full-screen overlay flash.
+
+[Project Knowledge Summary]
+- Date: 2026-10-16
+- Context: Discovered by Agent while implementing persistence and platform-security requirements (11, 12, 13)
+- Category: Operations & Deployment | Troubleshooting & Debugging
+- Instructions:
+  - Save files live in `Application.persistentDataPath` as AES-encrypted `save.dat` with a `save.dat.bak` backup; writes are atomic (temp file + `File.Replace`). A legacy plaintext `save.json` from earlier builds is auto-migrated to the encrypted format on first load, so do not hand-edit save files.
+  - The encryption key is derived from a fixed app secret (not the device id), so saves move across machines; anything that changes `SaveSerializer`'s secret or salt will invalidate existing saves.
+  - License keys use the format `SPS-XXXX-XXXX-XXXX-YYYY` where the last group is a SHA256-derived checksum of the payload. Generate a valid demo key via menu `StarPixelSurge/Security/Generate Demo License Key`; generate the integrity baseline via `StarPixelSurge/Security/Generate Integrity Baseline` (baseline ships with `Enforced = false`).
+  - `SecurityManager` refuses to terminate the session in the editor even on integrity mismatch, but will `Application.Quit` in a real build when the baseline is enforced.
