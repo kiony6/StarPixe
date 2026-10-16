@@ -13,15 +13,17 @@ using Debug = UnityEngine.Debug;
 namespace StarPixelSurge.EditorTools
 {
     /// <summary>
-    /// 真实 UDP 双进程联机测试的编辑器入口。负责：构建一个 Player 可执行文件、
-    /// 分别以房主与客户端身份启动两个进程（真实 UDP 套接字跨进程通信）、
-    /// 收集二者写入的结果文件并汇总判定。
+    /// 真实 UDP 多进程联机测试的编辑器入口。负责：构建一个 Player 可执行文件、
+    /// 以房主与若干客户端身份启动多个进程（真实 UDP 套接字跨进程通信）、
+    /// 收集各进程写入的结果文件并汇总判定。
     ///
     /// 可在菜单 StarPixelSurge/Network 下直接运行，也可通过 batchmode 的
     /// -executeMethod 在 CI 中执行，并以退出码反映结果。
     ///
-    /// 运行流程断言：创建房间 → 客户端加入 → 全员准备 → 开局 → 战斗采样
-    /// （快照推进与实体复制） → 房主退出 → 客户端完成房主迁移并恢复广播。
+    /// 断言流程：创建房间 → 客户端加入 → 全员准备 → 开局 → 战斗采样
+    /// （快照推进与实体复制） → 房主退出 → 一名客户端当选新房主、其余客户端
+    /// 跟随新房主并继续收到快照。后者是“UDP 房主迁移端点修复”的端到端验证：
+    /// 需要至少 3 个进程（房主 + 2 客户端）才会真正触发端点重新发现。
     /// </summary>
     public static class UdpTwoProcessTestRunner
     {
@@ -33,23 +35,36 @@ namespace StarPixelSurge.EditorTools
             public int Port = 7799;
             public string Room = "PLAYTEST";
             public string ClassId = "thunder_mage";
+            public int ClientCount = 1;
             public float Duration = 20f;
             public float MigrationWait = 10f;
-            public float ProcessTimeout = 150f;
+            public float ProcessTimeout = 180f;
+            public float Latency;
+            public float Jitter;
+            public float LossRate;
+            public float DuplicateRate;
             public bool Windowed;
             public bool SkipBuild;
         }
 
         private sealed class ProcessResult
         {
+            public int PlayerId;
             public string Role;
             public bool FileFound;
             public bool Passed;
             public int PassedCount;
             public int Total;
             public int ExitCode;
+            public string ResultPath;
             public string LogPath;
             public readonly List<string> Lines = new List<string>();
+        }
+
+        private sealed class LaunchHandle
+        {
+            public Process Process;
+            public ProcessResult Result;
         }
 
         [MenuItem("StarPixelSurge/Network/Run UDP Two-Process Test (Headless)")]
@@ -64,11 +79,24 @@ namespace StarPixelSurge.EditorTools
             Run(new Options { Windowed = true });
         }
 
+        [MenuItem("StarPixelSurge/Network/Run UDP Migration Test (3 Process, Headless)")]
+        public static void RunMigrationHeadless()
+        {
+            Run(new Options { ClientCount = 2, Duration = 12f });
+        }
+
+        [MenuItem("StarPixelSurge/Network/Run UDP Weak-Network Migration Test (Headless)")]
+        public static void RunWeakNetworkHeadless()
+        {
+            Run(new Options { ClientCount = 2, Duration = 12f, Latency = 0.08f, Jitter = 0.03f, LossRate = 0.05f });
+        }
+
         /// <summary>
         /// batchmode 入口，用法：
         /// Unity -batchmode -quit -projectPath ... -executeMethod
         /// StarPixelSurge.EditorTools.UdpTwoProcessTestRunner.RunFromCommandLine
-        /// [-playtestPort N] [-playtestDuration S] [-playtestMigration S]
+        /// [-playtestPort N] [-playtestClients N] [-playtestDuration S] [-playtestMigration S]
+        /// [-playtestLatency S] [-playtestJitter S] [-playtestLossRate F] [-playtestDuplicateRate F]
         /// [-playtestWindowed] [-playtestSkipBuild]
         /// </summary>
         public static void RunFromCommandLine()
@@ -80,7 +108,9 @@ namespace StarPixelSurge.EditorTools
 
         private static bool Run(Options options)
         {
-            Debug.Log($"[UdpPlaytest] 开始：端口={options.Port} 房间={options.Room} 时长={options.Duration}s 迁移等待={options.MigrationWait}s 窗口模式={options.Windowed}");
+            Debug.Log($"[UdpPlaytest] 开始：端口={options.Port} 房间={options.Room} 客户端数={options.ClientCount} " +
+                      $"时长={options.Duration}s 迁移等待={options.MigrationWait}s " +
+                      $"弱网(延迟={options.Latency} 抖动={options.Jitter} 丢包={options.LossRate} 重复={options.DuplicateRate}) 窗口模式={options.Windowed}");
 
             string exePath;
             if (options.SkipBuild)
@@ -103,34 +133,55 @@ namespace StarPixelSurge.EditorTools
 
             var runDir = Path.Combine(Path.GetTempPath(), $"sps_udp_{DateTime.Now:yyyyMMdd_HHmmss}");
             Directory.CreateDirectory(runDir);
-            var hostResult = Path.Combine(runDir, "host_result.txt");
-            var clientResult = Path.Combine(runDir, "client_result.txt");
-            var hostLog = Path.Combine(runDir, "host.log");
-            var clientLog = Path.Combine(runDir, "client.log");
 
-            var host = Launch(exePath, options, "host", hostResult, hostLog, runDir, false);
+            var expectedPlayers = options.ClientCount + 1;
+            var handles = new List<LaunchHandle>();
+
+            var host = Launch(exePath, options, "host", 0, expectedPlayers, false, false, runDir);
             if (host == null)
             {
                 return false;
             }
 
+            handles.Add(host);
+
             // 让房主先完成套接字绑定，降低首个加入请求的丢失概率。
             System.Threading.Thread.Sleep(2500);
 
-            var client = Launch(exePath, options, "client", clientResult, clientLog, runDir, true);
-            if (client == null)
+            for (var i = 1; i <= options.ClientCount; i++)
             {
-                TryKill(host);
-                return false;
+                // 加入顺序最小的客户端（id=1）预期当选新房主，其余客户端预期跟随它。
+                var client = Launch(exePath, options, "client", i, expectedPlayers, i == 1, i > 1, runDir);
+                if (client == null)
+                {
+                    KillAll(handles);
+                    return false;
+                }
+
+                handles.Add(client);
+                System.Threading.Thread.Sleep(500);
             }
 
-            var hostDone = WaitForExit(host, options.ProcessTimeout);
-            var clientDone = WaitForExit(client, options.ProcessTimeout);
-            var hostResultData = ReadResult(hostResult, hostLog, "host", host, hostDone);
-            var clientResultData = ReadResult(clientResult, clientLog, "client", client, clientDone);
+            // 等待全部进程退出或超时，再统一读取结果文件。
+            for (var i = 0; i < handles.Count; i++)
+            {
+                var exited = WaitForExit(handles[i].Process, options.ProcessTimeout);
+                ReadResult(handles[i].Result, handles[i].Process, exited);
+            }
 
-            var passed = hostResultData.Passed && clientResultData.Passed;
-            Report(hostResultData, clientResultData, passed);
+            var passed = true;
+            for (var i = 0; i < handles.Count; i++)
+            {
+                passed &= handles[i].Result.Passed;
+            }
+
+            var results = new List<ProcessResult>(handles.Count);
+            for (var i = 0; i < handles.Count; i++)
+            {
+                results.Add(handles[i].Result);
+            }
+
+            Report(results, passed);
             Debug.Log($"[UdpPlaytest] 运行目录：{runDir}");
             return passed;
         }
@@ -144,10 +195,7 @@ namespace StarPixelSurge.EditorTools
             }
 
             var buildDir = Path.Combine(Path.GetTempPath(), "sps_udp_build");
-            if (Directory.Exists(buildDir))
-            {
-                Directory.CreateDirectory(buildDir);
-            }
+            Directory.CreateDirectory(buildDir);
 
             var target = EditorUserBuildSettings.activeBuildTarget;
             var exeName = target == BuildTarget.StandaloneWindows64 || target == BuildTarget.StandaloneWindows
@@ -205,8 +253,11 @@ namespace StarPixelSurge.EditorTools
             return ScenePath;
         }
 
-        private static Process Launch(string exePath, Options options, string role, string resultPath, string logPath, string runDir, bool expectMigration)
+        private static LaunchHandle Launch(string exePath, Options options, string role, int playerId, int expectedPlayers, bool expectMigration, bool expectFollow, string runDir)
         {
+            var resultPath = Path.Combine(runDir, $"{role}{playerId}_result.txt");
+            var logPath = Path.Combine(runDir, $"{role}{playerId}.log");
+
             var args = new StringBuilder();
             args.Append("-batchmode ");
             if (!options.Windowed)
@@ -214,16 +265,33 @@ namespace StarPixelSurge.EditorTools
                 args.Append("-nographics ");
             }
 
+            var culture = System.Globalization.CultureInfo.InvariantCulture;
             args.Append($"-netRole {role} ");
+            args.Append($"-netPlayerId {playerId} ");
+            args.Append($"-netExpectedPlayers {expectedPlayers} ");
             args.Append($"-netPort {options.Port} ");
-            args.Append($"-netHost 127.0.0.1 ");
+            args.Append("-netHost 127.0.0.1 ");
             args.Append($"-netRoom {options.Room} ");
             args.Append($"-netClass {options.ClassId} ");
-            args.Append($"-netDuration {options.Duration.ToString(System.Globalization.CultureInfo.InvariantCulture)} ");
+            args.Append($"-netDuration {options.Duration.ToString(culture)} ");
+            args.Append($"-netLatency {options.Latency.ToString(culture)} ");
+            args.Append($"-netJitter {options.Jitter.ToString(culture)} ");
+            args.Append($"-netLossRate {options.LossRate.ToString(culture)} ");
+            args.Append($"-netDuplicateRate {options.DuplicateRate.ToString(culture)} ");
+
+            if (expectMigration || expectFollow)
+            {
+                args.Append($"-netWaitMigration {options.MigrationWait.ToString(culture)} ");
+            }
+
             if (expectMigration)
             {
                 args.Append("-netExpectMigration ");
-                args.Append($"-netWaitMigration {options.MigrationWait.ToString(System.Globalization.CultureInfo.InvariantCulture)} ");
+            }
+
+            if (expectFollow)
+            {
+                args.Append("-netExpectFollow ");
             }
 
             args.Append($"-netResult \"{resultPath}\"");
@@ -241,12 +309,16 @@ namespace StarPixelSurge.EditorTools
             try
             {
                 var process = Process.Start(startInfo);
-                Debug.Log($"[UdpPlaytest] 已启动 {role}，PID={process?.Id}，参数：{args}");
-                return process;
+                Debug.Log($"[UdpPlaytest] 已启动 {role}#{playerId}，PID={process?.Id}，参数：{args}");
+                return new LaunchHandle
+                {
+                    Process = process,
+                    Result = new ProcessResult { Role = role, PlayerId = playerId, ResultPath = resultPath, LogPath = logPath }
+                };
             }
             catch (Exception e)
             {
-                Debug.LogError($"[UdpPlaytest] 启动 {role} 失败：{e.Message}");
+                Debug.LogError($"[UdpPlaytest] 启动 {role}#{playerId} 失败：{e.Message}");
                 return null;
             }
         }
@@ -272,6 +344,14 @@ namespace StarPixelSurge.EditorTools
             return false;
         }
 
+        private static void KillAll(List<LaunchHandle> handles)
+        {
+            for (var i = 0; i < handles.Count; i++)
+            {
+                TryKill(handles[i].Process);
+            }
+        }
+
         private static void TryKill(Process process)
         {
             try
@@ -287,22 +367,17 @@ namespace StarPixelSurge.EditorTools
             }
         }
 
-        private static ProcessResult ReadResult(string resultPath, string logPath, string role, Process process, bool exited)
+        private static void ReadResult(ProcessResult result, Process process, bool exited)
         {
-            var result = new ProcessResult
-            {
-                Role = role,
-                LogPath = logPath,
-                ExitCode = TryExitCode(process)
-            };
+            result.ExitCode = TryExitCode(process);
 
-            if (!File.Exists(resultPath))
+            if (string.IsNullOrEmpty(result.ResultPath) || !File.Exists(result.ResultPath))
             {
-                return result;
+                return;
             }
 
             result.FileFound = true;
-            foreach (var line in File.ReadAllLines(resultPath))
+            foreach (var line in File.ReadAllLines(result.ResultPath))
             {
                 result.Lines.Add(line);
                 if (line.StartsWith("STATUS="))
@@ -323,8 +398,6 @@ namespace StarPixelSurge.EditorTools
             {
                 result.Passed = false;
             }
-
-            return result;
         }
 
         private static int TryExitCode(Process process)
@@ -339,12 +412,14 @@ namespace StarPixelSurge.EditorTools
             }
         }
 
-        private static void Report(ProcessResult host, ProcessResult client, bool passed)
+        private static void Report(List<ProcessResult> results, bool passed)
         {
             var builder = new StringBuilder();
             builder.Append($"[UdpPlaytest] {(passed ? "全部通过" : "存在失败")}\n");
-            AppendProcess(builder, host);
-            AppendProcess(builder, client);
+            for (var i = 0; i < results.Count; i++)
+            {
+                AppendProcess(builder, results[i]);
+            }
 
             if (passed)
             {
@@ -358,7 +433,7 @@ namespace StarPixelSurge.EditorTools
 
         private static void AppendProcess(StringBuilder builder, ProcessResult result)
         {
-            builder.Append($"  {result.Role}: {(result.FileFound ? "有结果" : "缺少结果文件")}, ")
+            builder.Append($"  {result.Role}#{result.PlayerId}: {(result.FileFound ? "有结果" : "缺少结果文件")}, ")
                 .Append($"{(result.Passed ? "PASS" : "FAIL")}, ")
                 .Append($"{result.PassedCount}/{result.Total}, exit={result.ExitCode}\n");
 
@@ -416,6 +491,14 @@ namespace StarPixelSurge.EditorTools
                         }
 
                         break;
+                    case "-playtestClients":
+                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out var clients))
+                        {
+                            options.ClientCount = Mathf.Clamp(clients, 1, 3);
+                            i++;
+                        }
+
+                        break;
                     case "-playtestDuration":
                         if (i + 1 < args.Length && float.TryParse(args[i + 1], out var duration))
                         {
@@ -428,6 +511,38 @@ namespace StarPixelSurge.EditorTools
                         if (i + 1 < args.Length && float.TryParse(args[i + 1], out var migration))
                         {
                             options.MigrationWait = Mathf.Max(3f, migration);
+                            i++;
+                        }
+
+                        break;
+                    case "-playtestLatency":
+                        if (i + 1 < args.Length && float.TryParse(args[i + 1], out var latency))
+                        {
+                            options.Latency = Mathf.Max(0f, latency);
+                            i++;
+                        }
+
+                        break;
+                    case "-playtestJitter":
+                        if (i + 1 < args.Length && float.TryParse(args[i + 1], out var jitter))
+                        {
+                            options.Jitter = Mathf.Max(0f, jitter);
+                            i++;
+                        }
+
+                        break;
+                    case "-playtestLossRate":
+                        if (i + 1 < args.Length && float.TryParse(args[i + 1], out var loss))
+                        {
+                            options.LossRate = Mathf.Clamp01(loss);
+                            i++;
+                        }
+
+                        break;
+                    case "-playtestDuplicateRate":
+                        if (i + 1 < args.Length && float.TryParse(args[i + 1], out var duplicate))
+                        {
+                            options.DuplicateRate = Mathf.Clamp01(duplicate);
                             i++;
                         }
 

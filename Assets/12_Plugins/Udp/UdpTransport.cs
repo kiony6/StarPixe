@@ -21,18 +21,40 @@ namespace StarPixelSurge.Network
         private const int HeaderBytes = 4;
         private const int MaxDatagramBytes = 1200;
 
+        private sealed class Inbound
+        {
+            public int SenderId;
+            public IPEndPoint Remote;
+            public byte[] Payload;
+            public float DueAt;
+        }
+
         private readonly Dictionary<int, IPEndPoint> _endpoints = new Dictionary<int, IPEndPoint>();
         private readonly List<IPEndPoint> _broadcastScratch = new List<IPEndPoint>();
+        private readonly List<Inbound> _inbound = new List<Inbound>();
         private readonly byte[] _sendScratch = new byte[MaxDatagramBytes];
 
         private UdpClient _client;
         private IPEndPoint _hostEndPoint;
+        private float _clock;
 
         public int LocalPlayerId { get; private set; } = -1;
 
         public int HostId { get; set; } = -1;
 
         public bool IsRunning => _client != null;
+
+        /// <summary>弱网模拟：单向入向延迟（秒）。</summary>
+        public float Latency { get; set; }
+
+        /// <summary>弱网模拟：延迟抖动幅度（秒），在 [0, Jitter] 内随机叠加。</summary>
+        public float Jitter { get; set; }
+
+        /// <summary>弱网模拟：入向丢包概率 [0,1]。</summary>
+        public float LossRate { get; set; }
+
+        /// <summary>弱网模拟：入向重复概率 [0,1]。</summary>
+        public float DuplicateRate { get; set; }
 
         /// <summary>本机绑定的端口（房主为固定端口，客户端为临时端口）。</summary>
         public int LocalPort { get; private set; }
@@ -121,6 +143,8 @@ namespace StarPixelSurge.Network
 
             _client = null;
             _endpoints.Clear();
+            _inbound.Clear();
+            _clock = 0f;
         }
 
         public void SendToHost(byte[] payload)
@@ -166,6 +190,14 @@ namespace StarPixelSurge.Network
                 return;
             }
 
+            _clock += Mathf.Max(0f, deltaTime);
+            ReceiveAvailable();
+            DeliverDue();
+        }
+
+        /// <summary>从套接字取出全部待收数据报，按弱网参数决定丢弃、重复与延迟投递。</summary>
+        private void ReceiveAvailable()
+        {
             try
             {
                 while (_client.Available > 0)
@@ -177,12 +209,21 @@ namespace StarPixelSurge.Network
                         continue;
                     }
 
-                    var senderId = ReadInt(data, 0);
-                    Observe(remote, senderId);
+                    if (LossRate > 0f && UnityEngine.Random.value < LossRate)
+                    {
+                        continue;
+                    }
 
+                    var senderId = ReadInt(data, 0);
                     var payload = new byte[data.Length - HeaderBytes];
                     Buffer.BlockCopy(data, HeaderBytes, payload, 0, payload.Length);
-                    MessageReceived?.Invoke(senderId, payload);
+
+                    Schedule(senderId, remote, payload);
+
+                    if (DuplicateRate > 0f && UnityEngine.Random.value < DuplicateRate)
+                    {
+                        Schedule(senderId, remote, payload);
+                    }
                 }
             }
             catch (SocketException)
@@ -192,6 +233,36 @@ namespace StarPixelSurge.Network
             catch (ObjectDisposedException)
             {
                 // 套接字在 Pump 期间被关闭，忽略。
+            }
+        }
+
+        /// <summary>按延迟与抖动计算到期时刻入队；无延迟时当帧即可投递。</summary>
+        private void Schedule(int senderId, IPEndPoint remote, byte[] payload)
+        {
+            var jitter = Jitter > 0f ? UnityEngine.Random.Range(0f, Jitter) : 0f;
+            var dueAt = _clock + Mathf.Max(0f, Latency) + jitter;
+            _inbound.Add(new Inbound
+            {
+                SenderId = senderId,
+                Remote = remote,
+                Payload = payload,
+                DueAt = dueAt
+            });
+        }
+
+        private void DeliverDue()
+        {
+            for (var i = _inbound.Count - 1; i >= 0; i--)
+            {
+                var message = _inbound[i];
+                if (message.DueAt > _clock)
+                {
+                    continue;
+                }
+
+                _inbound.RemoveAt(i);
+                Observe(message.Remote, message.SenderId);
+                MessageReceived?.Invoke(message.SenderId, message.Payload);
             }
         }
 

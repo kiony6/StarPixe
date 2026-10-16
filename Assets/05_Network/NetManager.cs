@@ -73,6 +73,18 @@ namespace StarPixelSurge.Network
         /// <summary>客户端连接的目标端口。</summary>
         public int RemotePort { get; set; } = 7777;
 
+        /// <summary>弱网模拟：单向延迟（秒），仅 UDP 传输生效。</summary>
+        public float NetLatency { get; set; }
+
+        /// <summary>弱网模拟：延迟抖动幅度（秒）。</summary>
+        public float NetJitter { get; set; }
+
+        /// <summary>弱网模拟：入向丢包概率 [0,1]。</summary>
+        public float NetLossRate { get; set; }
+
+        /// <summary>弱网模拟：入向重复概率 [0,1]。</summary>
+        public float NetDuplicateRate { get; set; }
+
         public event Action RoomUpdated;
 
         protected override void OnSingletonAwake()
@@ -162,6 +174,15 @@ namespace StarPixelSurge.Network
 
         public bool JoinRoom(string roomId, int hostId = 0)
         {
+            return JoinRoom(roomId, hostId, -1);
+        }
+
+        /// <summary>
+        /// 加入房间。<paramref name="localPlayerId"/> 为负时按房主 ID 自动分配（两名玩家的默认行为），
+        /// 显式传入则用于三名及以上玩家的自动化联机测试。
+        /// </summary>
+        public bool JoinRoom(string roomId, int hostId, int localPlayerId)
+        {
             if (string.IsNullOrEmpty(roomId))
             {
                 return false;
@@ -174,7 +195,7 @@ namespace StarPixelSurge.Network
             State = RoomState.Lobby;
 
             _room.Reset();
-            LocalPlayerId = hostId == 1 ? 2 : 1;
+            LocalPlayerId = localPlayerId >= 0 ? localPlayerId : (hostId == 1 ? 2 : 1);
 
             _room.Join(hostId);
             _room.SetHost(hostId);
@@ -336,6 +357,10 @@ namespace StarPixelSurge.Network
             if (UseUdp)
             {
                 var udp = new UdpTransport();
+                udp.Latency = NetLatency;
+                udp.Jitter = NetJitter;
+                udp.LossRate = NetLossRate;
+                udp.DuplicateRate = NetDuplicateRate;
                 if (IsHost)
                 {
                     udp.SetLocalPort(HostPort);

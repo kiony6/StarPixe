@@ -13,9 +13,10 @@ namespace StarPixelSurge.Framework
     /// 其余情况完全不介入正常游戏流程。
     ///
     /// 该驱动在构建出的 Player（或编辑器 Play）中自动完成：
-    /// 配置 UDP 传输 → 创建/加入房间 → 选择职业 → 准备 → 开局 → 采样快照与实体复制
-    /// → （客户端）等待房主退出后完成房主迁移。每个进程把结构化结果写入 -netResult 指定文件，
-    /// 由编辑器侧的 <c>UdpTwoProcessTestRunner</c> 汇总判定。
+    /// 配置 UDP 传输（可选弱网参数）→ 创建/加入房间 → 选择职业 → 准备 → 开局
+    /// → 采样快照与实体复制 → （客户端）等待房主退出后完成房主迁移或跟随新房主。
+    /// 每个进程把结构化结果写入 -netResult 指定文件，由编辑器侧的
+    /// <c>UdpTwoProcessTestRunner</c> 汇总判定。
     ///
     /// 命令行参数：
     /// -netRole host|client      角色（必填，缺失则本驱动不激活）
@@ -23,9 +24,13 @@ namespace StarPixelSurge.Framework
     /// -netPort 7777             房主端口
     /// -netRoom TEST             房间号
     /// -netClass thunder_mage    所选职业
+    /// -netPlayerId 1            本机玩家 ID（多客户端测试用；负数按房主自动分配）
+    /// -netExpectedPlayers 2     房主开局所需人数
     /// -netDuration 20           战斗采样时长（秒）；房主到点后退出以触发迁移
-    /// -netExpectMigration       客户端是否等待并校验房主迁移
-    /// -netWaitMigration 8       客户端等待迁移的上限（秒）
+    /// -netExpectMigration       本客户端预期当选新房主
+    /// -netExpectFollow          本客户端预期跟随新房主并继续收到快照
+    /// -netWaitMigration 8       等待迁移/跟随的上限（秒）
+    /// -netLatency/-netJitter/-netLossRate/-netDuplicateRate   弱网模拟参数
     /// -netResult path           结果文件路径
     /// </summary>
     public class NetworkPlaytestDriver : MonoBehaviour
@@ -50,9 +55,16 @@ namespace StarPixelSurge.Framework
         private int _port;
         private string _room;
         private string _classId;
+        private int _playerId = -1;
+        private int _expectedPlayers = 2;
         private float _duration;
         private bool _expectMigration;
+        private bool _expectFollow;
         private float _waitMigration;
+        private float _latency;
+        private float _jitter;
+        private float _lossRate;
+        private float _duplicateRate;
         private string _resultPath;
 
         private Phase _phase = Phase.WaitBootstrap;
@@ -70,6 +82,9 @@ namespace StarPixelSurge.Framework
         private bool _migrationElected;
         private int _migrationFrame;
         private bool _migrationBroadcast;
+        private bool _followDetected;
+        private int _followFrame = -1;
+        private bool _followProgressed;
 
         /// <summary>命令行存在 -netRole 时创建驱动；否则直接返回，不影响正常启动。</summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -95,14 +110,22 @@ namespace StarPixelSurge.Framework
             _port = ParseInt(GetArg(args, "-netPort", "7777"), 7777);
             _room = GetArg(args, "-netRoom", "TEST");
             _classId = GetArg(args, "-netClass", "thunder_mage");
+            _playerId = ParseInt(GetArg(args, "-netPlayerId", "-1"), -1);
+            _expectedPlayers = Mathf.Max(2, ParseInt(GetArg(args, "-netExpectedPlayers", "2"), 2));
             _duration = ParseFloat(GetArg(args, "-netDuration", "20"), 20f);
             _expectMigration = HasFlag(args, "-netExpectMigration");
+            _expectFollow = HasFlag(args, "-netExpectFollow");
             _waitMigration = ParseFloat(GetArg(args, "-netWaitMigration", "8"), 8f);
+            _latency = ParseFloat(GetArg(args, "-netLatency", "0"), 0f);
+            _jitter = ParseFloat(GetArg(args, "-netJitter", "0"), 0f);
+            _lossRate = ParseFloat(GetArg(args, "-netLossRate", "0"), 0f);
+            _duplicateRate = ParseFloat(GetArg(args, "-netDuplicateRate", "0"), 0f);
             _resultPath = GetArg(args, "-netResult", Path.Combine(Application.persistentDataPath, $"udp_playtest_{_role}.txt"));
             _maxLifetime = _duration + _waitMigration + EnterRoomTimeout + WaitMatchTimeout + 20f;
 
             Application.logMessageReceived += OnLog;
-            Debug.Log($"[Playtest:{_role}] 启动 端口={_port} 房主={_host} 房间={_room} 时长={_duration}s 迁移={_expectMigration}");
+            Debug.Log($"[Playtest:{_role}] 启动 端口={_port} 房主={_host} 房间={_room} 玩家={_playerId} 时长={_duration}s " +
+                      $"迁移={_expectMigration} 跟随={_expectFollow} 弱网(延迟={_latency} 抖动={_jitter} 丢包={_lossRate} 重复={_duplicateRate})");
         }
 
         private void OnLog(string condition, string stackTrace, LogType type)
@@ -160,6 +183,10 @@ namespace StarPixelSurge.Framework
             _net.HostPort = _port;
             _net.RemoteHost = _host;
             _net.RemotePort = _port;
+            _net.NetLatency = _latency;
+            _net.NetJitter = _jitter;
+            _net.NetLossRate = _lossRate;
+            _net.NetDuplicateRate = _duplicateRate;
 
             if (IsHost)
             {
@@ -168,8 +195,8 @@ namespace StarPixelSurge.Framework
             }
             else
             {
-                var joined = _net.JoinRoom(_room);
-                _report.Add("ClientJoinRequestAccepted", joined, $"room={_room}");
+                var joined = _net.JoinRoom(_room, 0, _playerId);
+                _report.Add("ClientJoinRequestAccepted", joined, $"room={_room} player={_playerId}");
             }
 
             _net.SelectClass(_classId);
@@ -181,10 +208,10 @@ namespace StarPixelSurge.Framework
         private void TickWaitMatch()
         {
             // 房主：人数与准备态齐备后开局。控制类消息的重发由 NetManager 在大厅内兜底。
-            if (IsHost && !_started && _net.CanStartMatch() && _net.Room.Count >= 2)
+            if (IsHost && !_started && _net.CanStartMatch() && _net.Room.Count >= _expectedPlayers)
             {
                 _started = true;
-                _report.Add("HostSawClient", _net.Room.Count >= 2, $"count={_net.Room.Count}");
+                _report.Add("HostSawAllClients", _net.Room.Count >= _expectedPlayers, $"count={_net.Room.Count} expected={_expectedPlayers}");
                 _report.Add("AllMembersReady", _net.Room.AllReady(), $"count={_net.Room.Count}");
                 _net.StartMatch();
             }
@@ -233,7 +260,7 @@ namespace StarPixelSurge.Framework
                 _report.Add("WorldProgressed", _maxEntities > 0 || Kills() > 0 || WaveLayer() > 0,
                     $"entities={_maxEntities} kills={Kills()} wave={WaveLayer()}");
 
-                if (_expectMigration)
+                if (_expectMigration || _expectFollow)
                 {
                     _phase = Phase.Migration;
                     _phaseElapsed = 0f;
@@ -247,6 +274,12 @@ namespace StarPixelSurge.Framework
 
         private void TickMigration()
         {
+            if (_expectFollow)
+            {
+                TickFollowHost();
+                return;
+            }
+
             if (!_migrationElected && _net.IsHost && _net.LocalPlayerId >= 0)
             {
                 _migrationElected = true;
@@ -275,6 +308,48 @@ namespace StarPixelSurge.Framework
             if (_phaseElapsed > _waitMigration)
             {
                 _report.Add("HostMigrationSucceeded", false, $"等待 {_waitMigration:F0}s 未完成迁移");
+                Finish();
+            }
+        }
+
+        /// <summary>
+        /// 未当选房主的客户端在新房主接管后应继续收到快照。此断言正是“UDP 房主迁移端点修复”
+        /// 的端到端验证：只有新房主重建了其余成员的寻址表，快照才能继续抵达本客户端。
+        /// </summary>
+        private void TickFollowHost()
+        {
+            var migration = _net.Migration;
+            var currentHost = migration != null ? migration.CurrentHostId : 0;
+
+            if (!_followDetected && currentHost >= 0 && currentHost != 0 && currentHost != _net.LocalPlayerId)
+            {
+                _followDetected = true;
+                _followFrame = _net.Frame != null ? _net.Frame.LatestSnapshotFrame : -1;
+                _report.Add("FollowedNewHost", true, $"newHost={currentHost}");
+                Debug.Log($"[Playtest:client] 已切换到新房主 {currentHost}，当前快照帧={_followFrame}");
+            }
+
+            if (_followDetected)
+            {
+                var frame = _net.Frame != null ? _net.Frame.LatestSnapshotFrame : -1;
+                if (!_followProgressed && frame > _followFrame)
+                {
+                    _followProgressed = true;
+                    _report.Add("SnapshotsAfterMigration", true, $"frames+={frame - _followFrame}");
+                }
+
+                if (_phaseElapsed > _waitMigration)
+                {
+                    _report.Add("RemainedClient", !_net.IsHost, $"isHost={_net.IsHost}");
+                    Finish();
+                }
+
+                return;
+            }
+
+            if (_phaseElapsed > _waitMigration)
+            {
+                _report.Add("FollowedNewHost", false, $"等待 {_waitMigration:F0}s 未见新房主 (host={currentHost})");
                 Finish();
             }
         }
