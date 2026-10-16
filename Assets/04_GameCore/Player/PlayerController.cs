@@ -1,4 +1,5 @@
 using StarPixelSurge.Framework;
+using StarPixelSurge.Network;
 using UnityEngine;
 
 namespace StarPixelSurge.GameCore
@@ -68,6 +69,15 @@ namespace StarPixelSurge.GameCore
             if (_moveInput.sqrMagnitude > 1f)
             {
                 _moveInput.Normalize();
+            }
+
+            // 联机客户端上报输入，交由房主权威模拟并广播快照。
+            if (NetManager.HasInstance
+                && !NetManager.Instance.IsHost
+                && NetManager.Instance.State == RoomState.Playing
+                && FrameSyncService.HasInstance)
+            {
+                FrameSyncService.Instance.SubmitLocalInput(_moveInput);
             }
         }
     }

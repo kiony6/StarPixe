@@ -1,6 +1,7 @@
 using StarPixelSurge.Config;
 using StarPixelSurge.Framework;
 using StarPixelSurge.Map;
+using StarPixelSurge.Network;
 using StarPixelSurge.UI;
 using UnityEngine;
 
@@ -108,6 +109,20 @@ namespace StarPixelSurge.GameCore
 
         public void StartSinglePlayer(string classId)
         {
+            StartMatch(classId, Random.Range(int.MinValue, int.MaxValue), MatchMode.SinglePlayer, true);
+        }
+
+        /// <summary>
+        /// 联机开局。房主与客户端使用同一随机种子构建地图；
+        /// 仅房主启动波次模拟，客户端等待快照驱动。
+        /// </summary>
+        public void StartMultiplayer(int seed, bool isHost, string classId = null)
+        {
+            StartMatch(classId, seed, MatchMode.Multiplayer, isHost);
+        }
+
+        private void StartMatch(string classId, int seed, MatchMode mode, bool runSimulation)
+        {
             if (string.IsNullOrEmpty(classId))
             {
                 classId = ResolveClassId();
@@ -123,7 +138,7 @@ namespace StarPixelSurge.GameCore
             WaveManager.Instance.StopWaves();
 
             var classConfig = ConfigService.Instance.GetClass(classId);
-            _matchSeed = Random.Range(int.MinValue, int.MaxValue);
+            _matchSeed = seed;
 
             BuildRoomMap();
 
@@ -143,7 +158,7 @@ namespace StarPixelSurge.GameCore
 
             EnsureUi();
 
-            GameManager.Instance.StartMatch(MatchConfig.SinglePlayer(classId, _matchSeed));
+            GameManager.Instance.StartMatch(new MatchConfig(mode, classId, _matchSeed));
 
             SkillManager.Instance.ResetAll();
             SkillManager.Instance.SetPlayer(_player.transform);
@@ -161,7 +176,12 @@ namespace StarPixelSurge.GameCore
             WaveManager.Instance.SetPlayer(_player.transform);
             WaveManager.Instance.SetMonsterPrefab(ResolveMonsterPrefab());
             WaveManager.Instance.SetMap(_roomMap);
-            WaveManager.Instance.StartWaves();
+
+            // 客户端不本地生成波次，由房主快照驱动远端实体。
+            if (runSimulation)
+            {
+                WaveManager.Instance.StartWaves();
+            }
         }
 
         /// <summary>重开一局：使用上一次职业重新生成地图并开局。</summary>
@@ -180,8 +200,7 @@ namespace StarPixelSurge.GameCore
                 return;
             }
 
-            _roomMap = MapGenerator.Generate(config, _matchSeed, null);
-        }
+            _roomMap = MapGenerator.Generate(config, _matchSeed, null);        }
 
         private void DestroyRoomMap()
         {
@@ -290,6 +309,7 @@ namespace StarPixelSurge.GameCore
 
             go.AddComponent<PlayerStats>();
             go.AddComponent<PlayerExperience>();
+            go.AddComponent<NetworkEntityBinder>();
             return go.AddComponent<PlayerController>();
         }
 
@@ -314,6 +334,7 @@ namespace StarPixelSurge.GameCore
             collider.radius = 0.4f;
 
             go.AddComponent<MonsterController>();
+            go.AddComponent<NetworkEntityBinder>();
             go.SetActive(false);
             _runtimeMonsterTemplate = go;
             return go;

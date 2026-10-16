@@ -48,6 +48,9 @@ namespace StarPixelSurge.GameCore
 
         public float HealthNormalized => maxHealth > 0f ? Mathf.Clamp01(_health / maxHealth) : 0f;
 
+        /// <summary>当前生命值，供网络快照采集。</summary>
+        public float Health => _health;
+
         public void Configure(float health, float speed, float experience, bool boss = false)
         {
             maxHealth = Mathf.Max(1f, health);
