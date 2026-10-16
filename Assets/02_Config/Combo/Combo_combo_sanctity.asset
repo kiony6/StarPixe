@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cae643e77dc949af806f35b63b797e8, type: 3}
+  m_Name: Combo_combo_sanctity
+  m_EditorClassIdentifier: 
+  Id: combo_sanctity
+  DisplayName: 圣辉降临
+  Description: 圣辉光球 + 圣光弹满级触发圣辉降临。
+  SkillA: radiant_orbs
+  SkillB: holy_light
+  RequiredLevelA: 5
+  RequiredLevelB: 5
+  FullScreenEffectId: fx_combo_sanctity
+  LinkedMechanicId: mech_combo_sanctity
+  MultiplayerOnly: 0

@@ -287,7 +287,7 @@ namespace StarPixelSurge.UI
             var label = StatLabel(affix.StatKey);
             var sign = affix.Value >= 0f ? "+" : "-";
             var magnitude = Mathf.Abs(affix.Value);
-            var isPercent = IsPercentStat(affix.StatKey);
+            var isPercent = IsPercentStat(affix);
 
             var valueText = isPercent
                 ? $"{sign}{Mathf.RoundToInt(magnitude * 100f)}%"
@@ -297,15 +297,18 @@ namespace StarPixelSurge.UI
             return string.IsNullOrEmpty(label) ? $"{valueText}（{mode}）" : $"{label} {valueText}（{mode}）";
         }
 
-        private static bool IsPercentStat(string statKey)
+        private static bool IsPercentStat(AffixConfig affix)
         {
-            switch (statKey)
+            switch (affix.StatKey)
             {
                 case "damage":
                 case "range":
                 case "cooldown":
                 case "critChance":
                     return true;
+                case "maxHealth":
+                case "moveSpeed":
+                    return affix.IsMultiplicative;
                 default:
                     return false;
             }
@@ -325,6 +328,10 @@ namespace StarPixelSurge.UI
                     return "暴击率";
                 case "moveSpeed":
                     return "移动速度";
+                case "maxHealth":
+                    return "最大生命";
+                case "pickupRange":
+                    return "拾取范围";
                 case "projectileCount":
                     return "弹道数量";
                 default:

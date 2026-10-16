@@ -281,8 +281,14 @@ namespace StarPixelSurge.GameCore
             {
                 case "runner":
                     return new Archetype { Health = 0.6f, Speed = 1.6f, Experience = 0.9f };
+                case "swarmer":
+                    return new Archetype { Health = 0.4f, Speed = 1.8f, Experience = 0.7f };
+                case "charger":
+                    return new Archetype { Health = 1.4f, Speed = 1.35f, Experience = 1.3f };
                 case "brute":
                     return new Archetype { Health = 2.2f, Speed = 0.75f, Experience = 1.6f };
+                case "juggernaut":
+                    return new Archetype { Health = 4.5f, Speed = 0.6f, Experience = 2.2f };
                 case "elite":
                     return new Archetype { Health = 3.5f, Speed = 0.9f, Experience = 2.5f };
                 case "boss":

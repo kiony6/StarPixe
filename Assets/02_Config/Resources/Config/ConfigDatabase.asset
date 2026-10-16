@@ -28,24 +28,49 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bab42ffedaa952fcb5a0f290a5563ccd, type: 2}
   - {fileID: 11400000, guid: 7899b998c58949e2d33424fd78009bba, type: 2}
   - {fileID: 11400000, guid: 14c163516da120b52622f9294033ac41, type: 2}
+  - {fileID: 11400000, guid: 21d7d14a002be2ced0f63c21e4ff873c, type: 2}
+  - {fileID: 11400000, guid: e6bd937cebbdd73dc3a0e6356dfdc418, type: 2}
+  - {fileID: 11400000, guid: fb7d2a2764ab95b82cbf3d37c15b0d7f, type: 2}
+  - {fileID: 11400000, guid: 94acceb29564fae366b3177c4b1adb56, type: 2}
+  - {fileID: 11400000, guid: 90eaa029718655508f405c893f3a18a3, type: 2}
+  - {fileID: 11400000, guid: 5d36842a6a43c102666ac26a3878cbc3, type: 2}
+  - {fileID: 11400000, guid: be0145479e2333ba743dab55e29b48c4, type: 2}
+  - {fileID: 11400000, guid: 010dc8534b83f96284e864804b748c7a, type: 2}
+  - {fileID: 11400000, guid: 581e8dc1d76ca327e470ab35c3793bce, type: 2}
   Affixes:
+  - {fileID: 11400000, guid: c1561ba1bee3ccafea32fd0148299c68, type: 2}
   - {fileID: 11400000, guid: d19ba933198793626b4c92826a8690a2, type: 2}
   - {fileID: 11400000, guid: 42eef0b8d07fe55000f9e2bbb54428ef, type: 2}
-  - {fileID: 11400000, guid: c1561ba1bee3ccafea32fd0148299c68, type: 2}
   - {fileID: 11400000, guid: a29cde2e0cf4c8d3dd94bf11308f6bf5, type: 2}
-  - {fileID: 11400000, guid: e5f07bff4904053c390449aa146c7996, type: 2}
   - {fileID: 11400000, guid: 71f676d29af963d73ad9fa99b2805686, type: 2}
+  - {fileID: 11400000, guid: e5f07bff4904053c390449aa146c7996, type: 2}
+  - {fileID: 11400000, guid: 0894512a0a385d8c04fda5e7e566f1be, type: 2}
+  - {fileID: 11400000, guid: 2d4bd10f5bd12d72381407048811ba2f, type: 2}
+  - {fileID: 11400000, guid: 17e1b68c884dcf0389123e0bf4c80481, type: 2}
+  - {fileID: 11400000, guid: 393dfa0ebc391e25453b51279d0dd885, type: 2}
+  - {fileID: 11400000, guid: 1014dddb68d30c1a407c0d58d456e0bd, type: 2}
+  - {fileID: 11400000, guid: 34cb1381a598fea586f4b4a74b91709f, type: 2}
+  - {fileID: 11400000, guid: fe98ffecb344d11147ea98bf68259d23, type: 2}
+  - {fileID: 11400000, guid: 83ffbd8e38ee7e3f1d8748bad79e7a10, type: 2}
+  - {fileID: 11400000, guid: b1d9b450615a43a4447318a192731576, type: 2}
   Combos:
   - {fileID: 11400000, guid: 02e08bcd5f47d1874c07f8458259fc9c, type: 2}
   - {fileID: 11400000, guid: 62894a234c3cd422d9d690145129dbe8, type: 2}
   - {fileID: 11400000, guid: 1d7382b390badd747eab10ce96c54bca, type: 2}
   - {fileID: 11400000, guid: 2fa0b1beadae4dbe0b4bc42d452410cd, type: 2}
   - {fileID: 11400000, guid: 425544f483b16f08e388bd5fb8f3574d, type: 2}
+  - {fileID: 11400000, guid: 8548d78280b655a3039c9910df4e2c12, type: 2}
+  - {fileID: 11400000, guid: ef173437fa0fad31906f130f8bf85edb, type: 2}
+  - {fileID: 11400000, guid: eb8b026b2ad86673ad8fe001f953f784, type: 2}
+  - {fileID: 11400000, guid: 8bff95e0fb13ed831a466090675de49a, type: 2}
+  - {fileID: 11400000, guid: d47e30f9a2f77c36640ed65ade71294b, type: 2}
   Classes:
   - {fileID: 11400000, guid: e9fe79a1b495f56e6685a6bfbee610d9, type: 2}
   - {fileID: 11400000, guid: 1891bb4313b4c86b0680c0a287c18473, type: 2}
   - {fileID: 11400000, guid: 31877d6e41af9e9aa1683c08ad832264, type: 2}
   - {fileID: 11400000, guid: 7e9ffa8a8d789d89e9289f0836145f32, type: 2}
+  - {fileID: 11400000, guid: ac9876682e14d71ca8b31e3e3a2adea0, type: 2}
+  - {fileID: 11400000, guid: c89443084ee171d988286b3597c449e5, type: 2}
   Waves:
   - {fileID: 11400000, guid: b94af3f969a5ca7f12fe8d32b92832cd, type: 2}
   - {fileID: 11400000, guid: 201fbca9d4a5542e8a67c5f241ff004d, type: 2}
@@ -57,4 +82,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4c4d22dc295d06315e2057ae0e8f04ca, type: 2}
   - {fileID: 11400000, guid: 4f919da0ba5941c6c9dc072552c98762, type: 2}
   - {fileID: 11400000, guid: 0e1ff5ae31f76fb9b622ee50be69af19, type: 2}
+  - {fileID: 11400000, guid: 20b0b892029b2c297c19800c03aaa59c, type: 2}
+  - {fileID: 11400000, guid: 88597f88ff3731ca925ce75971939033, type: 2}
+  - {fileID: 11400000, guid: 1f76fe0d7d07f84771ac88bedcc904fa, type: 2}
+  - {fileID: 11400000, guid: 1ebf15a2c474965eb332973616e0f743, type: 2}
+  - {fileID: 11400000, guid: 3a565cc0ed3ac40591f6ea51dcca960c, type: 2}
   MapThemes: []

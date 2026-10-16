@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97e663b31526e4ca58ca77bee86b9a03, type: 3}
+  m_Name: Skill_radiant_orbs
+  m_EditorClassIdentifier: 
+  Id: radiant_orbs
+  DisplayName: 圣辉光球
+  Description: 环绕自身持续灼烧敌人。
+  Type: 1
+  Icon: {fileID: 0}
+  BaseDamage: 10
+  DamagePerLevel: 5
+  BaseRange: 3
+  RangePerLevel: 0.2
+  BaseCooldown: 1.5
+  CooldownPerLevel: 0.09
+  MaxLevel: 5
+  EffectId: 
+  ProjectilePrefabPath: 
+  ComboPartners:
+  - holy_light

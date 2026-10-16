@@ -221,6 +221,17 @@ namespace StarPixelSurge.GameCore
                     }
 
                     break;
+                case "maxHealth":
+                    if (affix.IsMultiplicative)
+                    {
+                        MultiplyMaxHealth(1f + affix.Value);
+                    }
+                    else
+                    {
+                        AddMaxHealth(affix.Value);
+                    }
+
+                    break;
                 case "critChance":
                     AddCritChance(affix.Value);
                     break;
@@ -229,6 +240,9 @@ namespace StarPixelSurge.GameCore
                     break;
                 case "cooldown":
                     MultiplySkillCooldown(1f + affix.Value);
+                    break;
+                case "pickupRange":
+                    AddPickupRange(affix.Value);
                     break;
                 case "projectileCount":
                     AddProjectiles(Mathf.RoundToInt(affix.Value));

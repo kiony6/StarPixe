@@ -38,13 +38,12 @@ namespace StarPixelSurge.UI
             _cardContainer = UiFactory.CreateRect(backdrop.transform, "ClassCards");
             UiFactory.SetAnchoredRect(_cardContainer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 10f), new Vector2(1400f, 620f));
 
-            var layout = _cardContainer.gameObject.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = 32f;
+            var layout = _cardContainer.gameObject.AddComponent<GridLayoutGroup>();
+            layout.cellSize = new Vector2(320f, 560f);
+            layout.spacing = new Vector2(32f, 32f);
+            layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            layout.constraintCount = 4;
             layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlWidth = false;
-            layout.childControlHeight = false;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
 
             _hintText = UiFactory.CreateText(backdrop.transform, "Hint", "点击职业卡片开始单机对局，或进入联机房间组队", 26, TextAnchor.LowerCenter, new Color(0.7f, 0.75f, 0.9f));
             UiFactory.SetAnchoredRect(_hintText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(1200f, 40f));
@@ -75,10 +74,34 @@ namespace StarPixelSurge.UI
                 return;
             }
 
+            ConfigureLayout(classes.Count);
+
             foreach (var classConfig in classes)
             {
                 CreateCard(classConfig);
             }
+        }
+
+        /// <summary>
+        /// 按职业数量自适应排布卡片：不超过 4 个时横排一行；更多时改为每行 3 个并整体缩放，
+        /// 保证新增职业后仍完整显示在屏幕内。
+        /// </summary>
+        private void ConfigureLayout(int count)
+        {
+            var grid = _cardContainer.GetComponent<GridLayoutGroup>();
+            if (grid == null)
+            {
+                return;
+            }
+
+            var columns = count <= 4 ? Mathf.Max(1, count) : 3;
+            var rows = Mathf.CeilToInt(count / (float)columns);
+            grid.constraintCount = columns;
+
+            var widthNeed = columns * grid.cellSize.x + (columns - 1) * grid.spacing.x;
+            var heightNeed = rows * grid.cellSize.y + (rows - 1) * grid.spacing.y;
+            var scale = Mathf.Min(1f, _cardContainer.rect.width / widthNeed, _cardContainer.rect.height / heightNeed);
+            _cardContainer.localScale = Vector3.one * Mathf.Max(0.3f, scale);
         }
 
         private List<ClassConfig> CollectClasses()
