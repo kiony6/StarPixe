@@ -84,6 +84,25 @@ namespace StarPixelSurge.EditorTools
                 }
             }
 
+            var affixIds = new HashSet<string>();
+            foreach (var affix in database.Affixes)
+            {
+                if (affix == null)
+                {
+                    continue;
+                }
+
+                if (!affixIds.Add(affix.Id))
+                {
+                    Debug.LogWarning($"[StarPixelSurge] Duplicate affix id: {affix.Id}");
+                }
+
+                if (!KnownStatKeys.Contains(affix.StatKey))
+                {
+                    Debug.LogWarning($"[StarPixelSurge] Affix {affix.Id} uses unknown stat key: {affix.StatKey}");
+                }
+            }
+
             var classIds = new HashSet<string>();
             foreach (var classConfig in database.Classes)
             {
@@ -92,10 +111,19 @@ namespace StarPixelSurge.EditorTools
                     continue;
                 }
 
-                classIds.Add(classConfig.Id);
+                if (!classIds.Add(classConfig.Id))
+                {
+                    Debug.LogWarning($"[StarPixelSurge] Duplicate class id: {classConfig.Id}");
+                }
+
                 if (!string.IsNullOrEmpty(classConfig.StartingSkillId) && !skillIds.Contains(classConfig.StartingSkillId))
                 {
                     Debug.LogWarning($"[StarPixelSurge] Class {classConfig.Id} starting skill missing: {classConfig.StartingSkillId}");
+                }
+
+                if (classConfig.SkillPool == null || classConfig.SkillPool.Length == 0)
+                {
+                    Debug.LogWarning($"[StarPixelSurge] Class {classConfig.Id} has an empty skill pool.");
                 }
 
                 foreach (var skillId in classConfig.SkillPool)
@@ -104,6 +132,15 @@ namespace StarPixelSurge.EditorTools
                     {
                         Debug.LogWarning($"[StarPixelSurge] Class {classConfig.Id} pool skill missing: {skillId}");
                     }
+                }
+            }
+
+            var mapThemeIds = new HashSet<string>();
+            foreach (var mapTheme in database.MapThemes)
+            {
+                if (mapTheme != null && !mapThemeIds.Add(mapTheme.Id))
+                {
+                    Debug.LogWarning($"[StarPixelSurge] Duplicate map theme id: {mapTheme.Id}");
                 }
             }
 
@@ -116,6 +153,7 @@ namespace StarPixelSurge.EditorTools
                 }
             }
 
+            var comboPairs = new HashSet<string>();
             foreach (var combo in database.Combos)
             {
                 if (combo == null)
@@ -126,6 +164,14 @@ namespace StarPixelSurge.EditorTools
                 if (!skillIds.Contains(combo.SkillA) || !skillIds.Contains(combo.SkillB))
                 {
                     Debug.LogWarning($"[StarPixelSurge] Combo {combo.Id} references missing skill(s).");
+                }
+
+                var key = string.CompareOrdinal(combo.SkillA, combo.SkillB) <= 0
+                    ? combo.SkillA + "+" + combo.SkillB
+                    : combo.SkillB + "+" + combo.SkillA;
+                if (!comboPairs.Add(key))
+                {
+                    Debug.LogWarning($"[StarPixelSurge] Duplicate combo skill pair: {key} ({combo.Id})");
                 }
             }
 
@@ -138,8 +184,13 @@ namespace StarPixelSurge.EditorTools
                 }
             }
 
-            Debug.Log($"[StarPixelSurge] Validate done. Skills={database.Skills.Length}, Classes={database.Classes.Length}, Combos={database.Combos.Length}, Waves={database.Waves.Length}, MissingLayers(1-10)={firstMissing}");
+            Debug.Log($"[StarPixelSurge] Validate done. Skills={database.Skills.Length}, Affixes={database.Affixes.Length}, Combos={database.Combos.Length}, Classes={database.Classes.Length}, Waves={database.Waves.Length}, MapThemes={database.MapThemes.Length}, MissingLayers(1-10)={firstMissing}");
         }
+
+        private static readonly HashSet<string> KnownStatKeys = new HashSet<string>
+        {
+            "damage", "moveSpeed", "maxHealth", "critChance", "range", "cooldown", "pickupRange", "projectileCount"
+        };
 
         private static void AddSceneToBuildSettings(string path)
         {
