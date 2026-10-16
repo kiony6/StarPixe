@@ -19,6 +19,10 @@ namespace StarPixelSurge.UI
         private Button _startButton;
         private Button _leaveButton;
         private Text _voiceStatusText;
+        private ChatView _chatView;
+        private Button _lockRoomButton;
+        private Text _lockStatusText;
+        private bool _isRoomLocked;
 
         private readonly List<GameObject> _playerRows = new List<GameObject>();
 
@@ -76,6 +80,20 @@ namespace StarPixelSurge.UI
 
             _leaveButton = UiFactory.CreateButton(backdrop.transform, "LeaveButton", "离开房间", new Color(0.8f, 0.4f, 0.4f), OnLeaveRoom);
             UiFactory.SetAnchoredRect(_leaveButton.GetComponent<RectTransform>(), new Vector2(0.65f, 0.1f), new Vector2(0.65f, 0.1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(220f, 56f));
+
+            // 锁房间按钮（仅房主可见）
+            _lockRoomButton = UiFactory.CreateButton(backdrop.transform, "LockRoomButton", "锁定房间", new Color(0.6f, 0.5f, 0.2f), OnLockRoomClicked);
+            UiFactory.SetAnchoredRect(_lockRoomButton.GetComponent<RectTransform>(), new Vector2(0.1f, 0.1f), new Vector2(0.1f, 0.1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(160f, 48f));
+
+            _lockStatusText = UiFactory.CreateText(backdrop.transform, "LockStatus", "", 18, TextAnchor.MiddleCenter, new Color(0.8f, 0.7f, 0.3f));
+            UiFactory.SetAnchoredRect(_lockStatusText.rectTransform, new Vector2(0.1f, 0.18f), new Vector2(0.1f, 0.18f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(160f, 24f));
+
+            // 聊天系统
+            _chatView = gameObject.AddComponent<ChatView>();
+            _chatView.Build(backdrop.transform, new Vector2(1f, 0.5f), new Vector2(300f, 250f));
+            // 调整聊天面板位置到右侧
+            var chatRect = _chatView.GetComponent<RectTransform>();
+            UiFactory.SetAnchoredRect(chatRect, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-320f, 0f), new Vector2(300f, 250f));
 
             OnClose();
         }
@@ -153,6 +171,27 @@ namespace StarPixelSurge.UI
         {
             await OnlineMatchmaker.LeaveRoomAsync();
             OnClose();
+        }
+
+        private void OnLockRoomClicked()
+        {
+            _isRoomLocked = !_isRoomLocked;
+            _lockRoomButton.GetComponentInChildren<Text>().text = _isRoomLocked ? "解锁房间" : "锁定房间";
+            _lockStatusText.text = _isRoomLocked ? "🔒 房间已锁定" : "🔓 房间开放";
+
+            if (_chatView != null)
+            {
+                _chatView.AddSystemMessage(_isRoomLocked ? "房间已锁定，新玩家无法加入" : "房间已解锁，新玩家可以加入");
+            }
+        }
+
+        private void OnKickPlayer(int playerIndex)
+        {
+            // TODO: 调用网络接口踢人
+            if (_chatView != null)
+            {
+                _chatView.AddSystemMessage($"已踢出玩家 {playerIndex}");
+            }
         }
     }
 }
