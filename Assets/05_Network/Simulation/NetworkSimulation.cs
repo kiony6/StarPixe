@@ -164,6 +164,7 @@ namespace StarPixelSurge.Network.Simulation
             CheckSnapshotFidelity(report);
             CheckInterpolationEnvelope(report);
             CheckInputReachedHost(report);
+            CheckTeamMechanics(report);
 
             if (_options.KillHostAtEnd)
             {
@@ -412,6 +413,42 @@ namespace StarPixelSurge.Network.Simulation
             }
 
             report.Add("InputReachedHost", passed, detail);
+        }
+
+        /// <summary>验证队友复活与跨玩家光环增益：构造倒地场景，断言附近队友可救起、远处队友不受影响。</summary>
+        private void CheckTeamMechanics(SimReport report)
+        {
+            if (_nodes.Count < 3)
+            {
+                report.Add("TeammateRevival", false, "节点不足，无法构造复活场景");
+                return;
+            }
+
+            // 冻结输入，令玩家 1 倒地、玩家 2 处于复活半径内、玩家 3 远离。
+            _host.ClearInputs();
+            _host.SetPlayerPosition(1, new Vector2(0f, 0f));
+            _host.SetPlayerPosition(2, new Vector2(1f, 0f));
+            _host.SetPlayerPosition(3, new Vector2(60f, 60f));
+            _host.ApplyDamage(1, SimNode.MaxPlayerHealth * 10f);
+
+            report.Add("TeammateDowned", !_host.IsAlive(1), _host.IsAlive(1) ? "玩家 1 未倒地" : string.Empty);
+
+            var frames = Mathf.CeilToInt((_host.ReviveDuration + 0.5f) * _options.TickRate);
+            PumpNetwork(1f / _options.TickRate, frames);
+
+            _host.TryGetHealth(1, out var revivedHealth);
+            var expected = SimNode.MaxPlayerHealth * _host.ReviveHealthFraction;
+            var revived = _host.IsAlive(1) && Mathf.Abs(revivedHealth - expected) <= 0.5f;
+            report.Add("TeammateRevived", revived, $"health={revivedHealth:F1} expected={expected:F1}");
+
+            _host.TryGetHealth(3, out var farHealth);
+            report.Add("FarTeammateUnaffected", _host.IsAlive(3) && farHealth >= SimNode.MaxPlayerHealth - 0.5f,
+                $"health={farHealth:F1}");
+
+            var nearbyBonus = _host.GetAuraBonus(2);
+            var farBonus = _host.GetAuraBonus(3);
+            report.Add("CrossPlayerAura", nearbyBonus >= 1 && farBonus == 0,
+                $"near={nearbyBonus} far={farBonus}");
         }
 
         private void CheckHostMigration(SimReport report)

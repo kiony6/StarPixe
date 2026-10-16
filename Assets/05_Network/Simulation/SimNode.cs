@@ -15,10 +15,14 @@ namespace StarPixelSurge.Network.Simulation
             public Vector2 Position;
             public Vector2 Input;
             public float Speed;
+            public float Health;
+            public float MaxHealth;
+            public int AuraBonus;
         }
 
         private const float MoveSpeed = 5f;
         private const float StartHealth = 100f;
+        private const float TeamAuraRadius = 4f;
         private const int InputLeadFrames = 2;
         private const int HistoryRetain = 256;
         private const float LobbySyncInterval = 0.25f;
@@ -27,6 +31,9 @@ namespace StarPixelSurge.Network.Simulation
         private readonly Dictionary<int, SimPlayer> _world = new Dictionary<int, SimPlayer>();
         private readonly Dictionary<int, string> _classByPlayer = new Dictionary<int, string>();
         private readonly SortedDictionary<int, StateSnapshot> _history = new SortedDictionary<int, StateSnapshot>();
+        private readonly ReviveTracker _revive = new ReviveTracker();
+        private readonly List<TeamPlayerState> _teamStates = new List<TeamPlayerState>();
+        private readonly List<int> _revived = new List<int>();
         private float _accumulator;
         private float _lobbyTimer;
         private bool _ready;
@@ -74,6 +81,13 @@ namespace StarPixelSurge.Network.Simulation
         public HostMigrationService Migration { get; }
 
         public int HostWorldCount => _world.Count;
+
+        /// <summary>初始/满额生命值（仿真常量，供断言使用）。</summary>
+        public const float MaxPlayerHealth = StartHealth;
+
+        public float ReviveDuration => _revive.ReviveDuration;
+
+        public float ReviveHealthFraction => _revive.ReviveHealthFraction;
 
         /// <summary>房主记录的各玩家职业 ID（来自准备包）。</summary>
         public string ClassOf(int playerId)
@@ -217,6 +231,58 @@ namespace StarPixelSurge.Network.Simulation
 
         public int HistoryCount => _history.Count;
 
+        /// <summary>仿真测试钩子：读取某玩家当前生命值。</summary>
+        public bool TryGetHealth(int playerId, out float health)
+        {
+            if (_world.TryGetValue(playerId, out var player))
+            {
+                health = player.Health;
+                return true;
+            }
+
+            health = 0f;
+            return false;
+        }
+
+        public bool IsAlive(int playerId)
+        {
+            return _world.TryGetValue(playerId, out var player) && player.Health > 0f;
+        }
+
+        public int GetAuraBonus(int playerId)
+        {
+            return _world.TryGetValue(playerId, out var player) ? player.AuraBonus : 0;
+        }
+
+        /// <summary>仿真测试钩子：对某玩家造成伤害（用于构造倒地场景）。</summary>
+        public void ApplyDamage(int playerId, float amount)
+        {
+            if (_world.TryGetValue(playerId, out var player))
+            {
+                player.Health = Mathf.Max(0f, player.Health - Mathf.Max(0f, amount));
+            }
+        }
+
+        /// <summary>仿真测试钩子：直接设置某玩家位置。</summary>
+        public void SetPlayerPosition(int playerId, Vector2 position)
+        {
+            if (_world.TryGetValue(playerId, out var player))
+            {
+                player.Position = position;
+            }
+        }
+
+        /// <summary>仿真测试钩子：清空所有玩家输入与输入缓冲，冻结队伍机制测试期间的位移。</summary>
+        public void ClearInputs()
+        {
+            foreach (var player in _world.Values)
+            {
+                player.Input = Vector2.zero;
+            }
+
+            Inputs.Clear();
+        }
+
         private void HostTick(float deltaTime)
         {
             if (!Playing)
@@ -243,8 +309,15 @@ namespace StarPixelSurge.Network.Simulation
 
                 foreach (var player in _world.Values)
                 {
+                    if (player.Health <= 0f)
+                    {
+                        continue;
+                    }
+
                     player.Position = AvatarMotion.Integrate(player.Position, player.Input, player.Speed, interval);
                 }
+
+                TickTeamMechanics(interval);
 
                 var snapshot = BuildSnapshot();
                 _history[Frame] = snapshot;
@@ -261,15 +334,47 @@ namespace StarPixelSurge.Network.Simulation
             var index = 0;
             foreach (var pair in _world)
             {
+                var player = pair.Value;
+                var alive = player.Health > 0f;
                 entities[index++] = new EntityState(
                     pair.Key,
                     EntityType.Player,
-                    pair.Value.Position,
-                    StartHealth,
-                    EntityStateFlags.Alive);
+                    player.Position,
+                    player.Health,
+                    alive ? EntityStateFlags.Alive : EntityStateFlags.None);
             }
 
             return new StateSnapshot(Frame, entities, 0, (uint)Frame);
+        }
+
+        /// <summary>房主按帧运行队友复活与跨玩家光环增益（复用纯逻辑实现）。</summary>
+        private void TickTeamMechanics(float interval)
+        {
+            _teamStates.Clear();
+            foreach (var pair in _world)
+            {
+                _teamStates.Add(new TeamPlayerState(pair.Key, pair.Value.Position, pair.Value.Health > 0f));
+            }
+
+            _revive.Tick(_teamStates, interval, _revived);
+            for (var i = 0; i < _revived.Count; i++)
+            {
+                if (_world.TryGetValue(_revived[i], out var revived))
+                {
+                    revived.Health = revived.MaxHealth * _revive.ReviveHealthFraction;
+                }
+            }
+
+            foreach (var pair in _world)
+            {
+                if (pair.Value.Health <= 0f)
+                {
+                    pair.Value.AuraBonus = 0;
+                    continue;
+                }
+
+                pair.Value.AuraBonus = TeamAura.NearbyAllyCount(_teamStates, pair.Key, TeamAuraRadius);
+            }
         }
 
         private void PruneHistory()
@@ -303,9 +408,14 @@ namespace StarPixelSurge.Network.Simulation
                 {
                     Position = Vector2.zero,
                     Input = Vector2.zero,
-                    Speed = MoveSpeed
+                    Speed = MoveSpeed,
+                    Health = StartHealth,
+                    MaxHealth = StartHealth,
+                    AuraBonus = 0
                 };
             }
+
+            _revive.Clear();
         }
 
         private void OnMessage(int senderId, byte[] payload)
@@ -455,7 +565,10 @@ namespace StarPixelSurge.Network.Simulation
                     {
                         Position = entity.Position,
                         Input = Vector2.zero,
-                        Speed = MoveSpeed
+                        Speed = MoveSpeed,
+                        Health = entity.Health > 0f ? entity.Health : StartHealth,
+                        MaxHealth = StartHealth,
+                        AuraBonus = 0
                     };
                 }
 

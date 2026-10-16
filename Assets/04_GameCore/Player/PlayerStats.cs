@@ -31,6 +31,10 @@ namespace StarPixelSurge.GameCore
         private float _multSkillCooldown = 1f;
         private int _bonusProjectiles;
 
+        private float _teamBonusDamage;
+        private float _teamBonusMoveSpeed;
+        private float _teamBonusCrit;
+
         public float MaxHealth { get; private set; }
 
         public float MoveSpeed { get; private set; }
@@ -94,6 +98,9 @@ namespace StarPixelSurge.GameCore
             _multSkillRange = 1f;
             _multSkillCooldown = 1f;
             _bonusProjectiles = 0;
+            _teamBonusDamage = 0f;
+            _teamBonusMoveSpeed = 0f;
+            _teamBonusCrit = 0f;
 
             Recalculate();
             CurrentHealth = MaxHealth;
@@ -167,6 +174,18 @@ namespace StarPixelSurge.GameCore
         public void AddProjectiles(int amount)
         {
             _bonusProjectiles += amount;
+            Recalculate();
+        }
+
+        /// <summary>
+        /// 设置跨玩家光环提供的临时伤害加成。与永久词条加成分离，由房主每帧按光环范围重算，
+        /// 传 0 即清除，避免逐帧累加导致数值膨胀。
+        /// </summary>
+        public void SetTeamBonus(float damage, float moveSpeed, float crit)
+        {
+            _teamBonusDamage = Mathf.Max(0f, damage);
+            _teamBonusMoveSpeed = Mathf.Max(0f, moveSpeed);
+            _teamBonusCrit = Mathf.Max(0f, crit);
             Recalculate();
         }
 
@@ -244,6 +263,28 @@ namespace StarPixelSurge.GameCore
             Broadcast();
         }
 
+        /// <summary>队友复活：把已倒地玩家以指定生命值救起。</summary>
+        public void Revive(float healthAmount)
+        {
+            if (!IsDead)
+            {
+                return;
+            }
+
+            CurrentHealth = Mathf.Clamp(healthAmount, 0.01f, Mathf.Max(0.01f, MaxHealth));
+            Broadcast();
+        }
+
+        /// <summary>
+        /// 由房主权威快照同步生命值。客户端本地玩家的生命由房主模拟，
+        /// 本方法不触发结算，仅对齐显示与状态。
+        /// </summary>
+        public void SetHealth(float health)
+        {
+            CurrentHealth = Mathf.Clamp(health, 0f, Mathf.Max(0.01f, MaxHealth));
+            Broadcast();
+        }
+
         public float RollDamage(float baseDamage)
         {
             var damage = baseDamage * DamageMultiplier;
@@ -258,9 +299,9 @@ namespace StarPixelSurge.GameCore
         private void Recalculate()
         {
             MaxHealth = (baseMaxHealth + _bonusHealth) * _multHealth;
-            MoveSpeed = (baseMoveSpeed + _bonusMoveSpeed) * _multMoveSpeed;
-            DamageMultiplier = (baseDamageMultiplier + _bonusDamage) * _multDamage;
-            CritChance = Mathf.Clamp01(baseCritChance + _bonusCrit);
+            MoveSpeed = (baseMoveSpeed + _bonusMoveSpeed) * _multMoveSpeed + _teamBonusMoveSpeed;
+            DamageMultiplier = (baseDamageMultiplier + _bonusDamage) * _multDamage + _teamBonusDamage;
+            CritChance = Mathf.Clamp01(baseCritChance + _bonusCrit + _teamBonusCrit);
             PickupRange = basePickupRange + _bonusPickup;
             SkillRangeMultiplier = _multSkillRange;
             SkillCooldownMultiplier = _multSkillCooldown;

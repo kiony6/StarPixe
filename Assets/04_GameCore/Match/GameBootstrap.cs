@@ -33,6 +33,7 @@ namespace StarPixelSurge.GameCore
         private PlayerStats _playerStats;
         private RoomMap _roomMap;
         private NetworkInputReplay _replay;
+        private NetworkTeamDirector _teamDirector;
         private int _matchSeed;
 
         public PlayerStats PlayerStats => _playerStats;
@@ -208,6 +209,8 @@ namespace StarPixelSurge.GameCore
 
             var net = NetManager.Instance;
             var registry = NetworkPlayerRegistry.Instance;
+            _replay?.Shutdown();
+            _teamDirector?.Shutdown();
             registry.Clear();
             registry.SetMap(_roomMap);
 
@@ -215,7 +218,9 @@ namespace StarPixelSurge.GameCore
             var spawn = _roomMap != null ? _roomMap.StartPosition : Vector2.zero;
 
             registry.RegisterLocal(_player.gameObject, localId, isHost);
-            _playerStats?.SetMatchFatal(true);
+
+            // 联机模式下所有玩家均可被队友复活，改为全员倒地时由队伍机制结束对局。
+            _playerStats?.SetMatchFatal(false);
 
             // 客户端本地角色改由房主快照驱动，关闭本地物理位移避免与快照冲突。
             _player.SetNetworkControlled(!isHost);
@@ -233,6 +238,13 @@ namespace StarPixelSurge.GameCore
             }
 
             _replay.Configure(FrameSyncService.Instance, registry);
+
+            if (_teamDirector == null)
+            {
+                _teamDirector = gameObject.AddComponent<NetworkTeamDirector>();
+            }
+
+            _teamDirector.Configure(FrameSyncService.Instance, registry);
         }
 
         /// <summary>房主补齐当前名册中尚未建立分身的远端玩家。</summary>
@@ -285,6 +297,9 @@ namespace StarPixelSurge.GameCore
             {
                 _player.SetNetworkControlled(false);
             }
+
+            _replay?.Shutdown();
+            _teamDirector?.Shutdown();
 
             if (NetworkPlayerRegistry.HasInstance)
             {

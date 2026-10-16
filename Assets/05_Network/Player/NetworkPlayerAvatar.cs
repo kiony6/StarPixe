@@ -150,6 +150,7 @@ namespace StarPixelSurge.Network
                 && FrameSyncService.Instance.TryGetInterpolated(PlayerId, out var state))
             {
                 SetAuthoritativePosition(state.Position);
+                _stats.SetHealth(state.Health);
             }
         }
 
