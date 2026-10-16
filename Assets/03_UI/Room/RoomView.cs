@@ -17,6 +17,8 @@ namespace StarPixelSurge.UI
         private const int MaxPlayers = 4;
         private const string DefaultRoomId = "LOCAL";
         private const string FallbackClassId = "thunder_mage";
+        private const string DefaultRemoteHost = "127.0.0.1";
+        private const string DefaultRemotePort = "7777";
 
         private static readonly Color BackdropColor = new Color(0.03f, 0.03f, 0.06f, 0.98f);
         private static readonly Color PanelColor = new Color(0.08f, 0.09f, 0.15f, 1f);
@@ -28,6 +30,7 @@ namespace StarPixelSurge.UI
         private static readonly Color AccentColor = new Color(0.25f, 0.65f, 0.95f);
         private static readonly Color JoinColor = new Color(0.25f, 0.6f, 0.5f);
         private static readonly Color LeaveColor = new Color(0.55f, 0.25f, 0.3f);
+        private static readonly Color ModeColor = new Color(0.2f, 0.24f, 0.36f);
 
         private sealed class MemberSlot
         {
@@ -44,6 +47,12 @@ namespace StarPixelSurge.UI
         private Transform _lobbyPanel;
         private Transform _roomPanel;
         private InputField _roomIdField;
+        private InputField _addressField;
+        private InputField _portField;
+        private Button _modeButton;
+        private Text _modeLabel;
+        private Transform _udpGroup;
+        private bool _useUdp;
         private Text _roomInfoText;
         private Text _statusText;
         private Button _readyButton;
@@ -77,14 +86,31 @@ namespace StarPixelSurge.UI
         private Transform BuildLobbyPanel(Transform parent)
         {
             var panel = UiFactory.CreateImage(parent, "LobbyPanel", PanelColor);
-            UiFactory.SetAnchoredRect((RectTransform)panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(760f, 320f));
+            UiFactory.SetAnchoredRect((RectTransform)panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(760f, 470f));
 
             var hint = UiFactory.CreateText(panel.transform, "Hint", "创建房间或输入房间号加入", 28, TextAnchor.UpperCenter, new Color(0.82f, 0.86f, 1f));
             UiFactory.SetAnchoredRect(hint.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(700f, 40f));
 
             _roomIdField = UiFactory.CreateInputField(panel.transform, "RoomIdField", DefaultRoomId, new Color(0.05f, 0.05f, 0.09f, 1f));
-            UiFactory.SetAnchoredRect((RectTransform)_roomIdField.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 30f), new Vector2(520f, 64f));
+            UiFactory.SetAnchoredRect((RectTransform)_roomIdField.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 96f), new Vector2(520f, 64f));
             _roomIdField.text = DefaultRoomId;
+
+            // 传输模式切换：进程内回环（本地联调）与真实 UDP（局域网/公网）。
+            _modeButton = UiFactory.CreateButton(panel.transform, "ModeButton", "传输：本地回环", ModeColor, OnToggleMode);
+            UiFactory.SetAnchoredRect(_modeButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 22f), new Vector2(560f, 56f));
+            _modeLabel = _modeButton.GetComponentInChildren<Text>();
+
+            _udpGroup = UiFactory.CreateRect(panel.transform, "UdpGroup");
+            UiFactory.SetAnchoredRect((RectTransform)_udpGroup, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -46f), new Vector2(700f, 64f));
+
+            _addressField = UiFactory.CreateInputField(_udpGroup, "AddressField", DefaultRemoteHost, new Color(0.05f, 0.05f, 0.09f, 1f));
+            UiFactory.SetAnchoredRect((RectTransform)_addressField.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-128f, 0f), new Vector2(410f, 60f));
+            _addressField.text = DefaultRemoteHost;
+
+            _portField = UiFactory.CreateInputField(_udpGroup, "PortField", DefaultRemotePort, new Color(0.05f, 0.05f, 0.09f, 1f));
+            UiFactory.SetAnchoredRect((RectTransform)_portField.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(192f, 0f), new Vector2(200f, 60f));
+            _portField.text = DefaultRemotePort;
+            _portField.contentType = InputField.ContentType.IntegerNumber;
 
             var create = UiFactory.CreateButton(panel.transform, "CreateRoom", "创建房间", AccentColor, OnCreateRoom);
             UiFactory.SetAnchoredRect(create.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-150f, 36f), new Vector2(260f, 64f));
@@ -92,7 +118,56 @@ namespace StarPixelSurge.UI
             var join = UiFactory.CreateButton(panel.transform, "JoinRoom", "加入房间", JoinColor, OnJoinRoom);
             UiFactory.SetAnchoredRect(join.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(150f, 36f), new Vector2(260f, 64f));
 
+            RefreshMode();
             return panel.transform;
+        }
+
+        /// <summary>切换本地回环与真实 UDP 传输模式。</summary>
+        private void OnToggleMode()
+        {
+            _useUdp = !_useUdp;
+            RefreshMode();
+        }
+
+        private void RefreshMode()
+        {
+            if (_modeLabel != null)
+            {
+                _modeLabel.text = _useUdp ? "传输：UDP" : "传输：本地回环";
+            }
+
+            if (_udpGroup != null)
+            {
+                _udpGroup.gameObject.SetActive(_useUdp);
+            }
+        }
+
+        /// <summary>把当前传输配置写入 <see cref="NetManager"/>，需在创建/加入房间之前调用。</summary>
+        private void ApplyTransport()
+        {
+            if (_net == null)
+            {
+                return;
+            }
+
+            _net.UseUdp = _useUdp;
+            if (!_useUdp)
+            {
+                return;
+            }
+
+            _net.RemoteHost = _addressField != null && !string.IsNullOrEmpty(_addressField.text)
+                ? _addressField.text
+                : DefaultRemoteHost;
+
+            var port = ParsePort(_portField != null ? _portField.text : null);
+            _net.RemotePort = port;
+            _net.HostPort = port;
+        }
+
+        private static int ParsePort(string text)
+        {
+            return int.TryParse(text, out var port) ? Mathf.Clamp(port, 1, 65535) : int.Parse(DefaultRemotePort);
         }
 
         private Transform BuildRoomPanel(Transform parent)
@@ -263,6 +338,7 @@ namespace StarPixelSurge.UI
 
         private void OnCreateRoom()
         {
+            ApplyTransport();
             _net.CreateRoom();
             PushLocalClass();
             GameManager.Instance.EnterRoom();
@@ -271,6 +347,7 @@ namespace StarPixelSurge.UI
 
         private void OnJoinRoom()
         {
+            ApplyTransport();
             var roomId = _roomIdField != null && !string.IsNullOrEmpty(_roomIdField.text) ? _roomIdField.text : DefaultRoomId;
             _net.JoinRoom(roomId);
             PushLocalClass();

@@ -16,7 +16,8 @@ namespace StarPixelSurge.Network
     /// <summary>
     /// 联机管理器。组装房间名册、帧同步、房主迁移与实体同步：
     /// 房主权威推进模拟并广播快照，客户端上报输入并按插值渲染远端实体。
-    /// 传输层通过 <see cref="TransportFactory"/> 可替换（默认进程内回环，后续接入 UDP 插件）。
+    /// 传输层默认使用进程内回环（<see cref="LocalTransport"/>）；将 <see cref="UseUdp"/> 置为 true
+    /// 后改用真实 UDP（<see cref="UdpTransport"/>），或通过 <see cref="TransportFactory"/> 注入自定义实现。
     /// </summary>
     public class NetManager : MonoSingleton<NetManager>
     {
@@ -46,8 +47,20 @@ namespace StarPixelSurge.Network
 
         public FrameSyncService Frame => FrameSyncService.HasInstance ? FrameSyncService.Instance : null;
 
-        /// <summary>传输层工厂，供测试或替换 UDP 实现。默认为进程内回环传输。</summary>
+        /// <summary>传输层工厂，供测试或替换实现。默认为进程内回环传输。</summary>
         public Func<ITransport> TransportFactory { get; set; }
+
+        /// <summary>是否使用真实 UDP 传输。为 false 时使用进程内回环，便于本地联调。</summary>
+        public bool UseUdp { get; set; }
+
+        /// <summary>房主绑定的 UDP 端口。</summary>
+        public int HostPort { get; set; } = 7777;
+
+        /// <summary>客户端连接的目标地址。</summary>
+        public string RemoteHost { get; set; } = "127.0.0.1";
+
+        /// <summary>客户端连接的目标端口。</summary>
+        public int RemotePort { get; set; } = 7777;
 
         public event Action RoomUpdated;
 
@@ -233,11 +246,32 @@ namespace StarPixelSurge.Network
 
         private void SetupTransport()
         {
-            var factory = TransportFactory ?? (() => new LocalTransport());
-            _transport = factory();
+            _transport = CreateTransport();
             _transport.MessageReceived += OnMessage;
             _transport.Start(LocalPlayerId);
             _transport.HostId = IsHost ? LocalPlayerId : _transport.HostId;
+        }
+
+        private ITransport CreateTransport()
+        {
+            if (UseUdp)
+            {
+                var udp = new UdpTransport();
+                if (IsHost)
+                {
+                    udp.SetLocalPort(HostPort);
+                    udp.HostId = LocalPlayerId;
+                }
+                else
+                {
+                    udp.SetHostEndPoint(RemoteHost, RemotePort);
+                }
+
+                return udp;
+            }
+
+            var factory = TransportFactory ?? (() => new LocalTransport());
+            return factory();
         }
 
         private void TearDownTransport()
