@@ -4,12 +4,13 @@ using UnityEngine;
 namespace StarPixelSurge.Framework
 {
     /// <summary>
-    /// 美术资源目录。按 <c>Resources/Sprites/&lt;category&gt;/&lt;id&gt;</c> 约定加载真实 Sprite；
+    /// 美术资源目录。按 <c>Assets/11_Res/Resources/Sprites/&lt;category&gt;/&lt;id&gt;</c> 约定加载真实 Sprite；
     /// 资源缺失时回退到程序化占位贴图，保证接入美术前后代码都不中断。
     ///
     /// 约定：放入该目录的贴图需按完整彩色美术绘制（加载后渲染器颜色统一为白色），
-    /// 命名与 id 一致（例如 <c>Resources/Sprites/monsters/boss</c>）。详见
-    /// <c>Assets/11_Res/Sprites/README.md</c>。
+    /// 命名与 id 一致（例如 <c>Sprites/monsters/boss</c>）。导入参数与目录说明详见
+    /// <c>Assets/11_Res/Sprites/README.md</c>，可用菜单
+    /// <c>StarPixelSurge/Assets/Apply Sprite Import Settings</c> 批量配置。
     /// </summary>
     public static class SpriteCatalog
     {
