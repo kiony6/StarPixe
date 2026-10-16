@@ -54,6 +54,9 @@ namespace StarPixelSurge.GameCore
         /// <summary>当前生命值，供网络快照采集。</summary>
         public float Health => _health;
 
+        /// <summary>移动速度。</summary>
+        public float MoveSpeed => moveSpeed;
+
         public void Configure(float health, float speed, float experience, bool boss = false, string archetypeId = "grunt")
         {
             _archetypeId = string.IsNullOrEmpty(archetypeId) ? "grunt" : archetypeId;

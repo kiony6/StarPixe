@@ -18,7 +18,9 @@ namespace StarPixelSurge.UI
                 canvasGroup = panel.AddComponent<CanvasGroup>();
             }
             canvasGroup.alpha = 0f;
-            panel.MonoStartCoroutine(FadeInCoroutine(canvasGroup, duration));
+            var runner = panel.GetComponent<CoroutineRunner>();
+            if (runner == null) runner = panel.AddComponent<CoroutineRunner>();
+            runner.StartCoroutine(FadeInCoroutine(canvasGroup, duration));
         }
 
         /// <summary>面板淡出效果。</summary>
@@ -29,7 +31,9 @@ namespace StarPixelSurge.UI
             {
                 canvasGroup = panel.AddComponent<CanvasGroup>();
             }
-            panel.MonoStartCoroutine(FadeOutCoroutine(canvasGroup, duration));
+            var runner = panel.GetComponent<CoroutineRunner>();
+            if (runner == null) runner = panel.AddComponent<CoroutineRunner>();
+            runner.StartCoroutine(FadeOutCoroutine(canvasGroup, duration));
         }
 
         /// <summary>按钮悬停放大效果。</summary>
@@ -44,7 +48,9 @@ namespace StarPixelSurge.UI
         {
             var startPos = item.anchoredPosition;
             item.anchoredPosition = new Vector2(-Screen.width, startPos.y);
-            item.MonoStartCoroutine(SlideInCoroutine(item, startPos, duration));
+            var runner = item.GetComponent<CoroutineRunner>();
+            if (runner == null) runner = item.gameObject.AddComponent<CoroutineRunner>();
+            runner.StartCoroutine(SlideInCoroutine(item, startPos, duration));
         }
 
         private static System.Collections.IEnumerator FadeInCoroutine(CanvasGroup group, float duration)

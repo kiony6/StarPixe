@@ -155,7 +155,7 @@ namespace StarPixelSurge.GameCore
             go.transform.position = transform.position;
 
             var projectile = go.AddComponent<EnemyProjectile>();
-            projectile.Launch(direction, _projectileSpeed, 5f);
+            projectile.Launch(direction, 5f);
         }
 
         private void StartCharge()
