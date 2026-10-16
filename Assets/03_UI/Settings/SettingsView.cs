@@ -88,22 +88,28 @@ namespace StarPixelSurge.UI
             }
 
             UIManager.Instance.Close<SettingsView>();
-            // 返回时重新打开暂停面板，保持游戏暂停状态
-            var pause = UIManager.Instance.Get<PauseView>();
-            if (pause != null)
+            // 只有在对局中才重新打开暂停面板
+            if (GameManager.HasInstance && (GameManager.Instance.State == GameState.Playing || GameManager.Instance.State == GameState.Paused))
             {
-                pause.Open();
+                var pause = UIManager.Instance.Get<PauseView>();
+                if (pause != null)
+                {
+                    pause.Open();
+                }
             }
         }
 
         private void OnBackClicked()
         {
             UIManager.Instance.Close<SettingsView>();
-            // 返回时重新打开暂停面板，保持游戏暂停状态
-            var pause = UIManager.Instance.Get<PauseView>();
-            if (pause != null)
+            // 只有在对局中才重新打开暂停面板
+            if (GameManager.HasInstance && (GameManager.Instance.State == GameState.Playing || GameManager.Instance.State == GameState.Paused))
             {
-                pause.Open();
+                var pause = UIManager.Instance.Get<PauseView>();
+                if (pause != null)
+                {
+                    pause.Open();
+                }
             }
         }
     }
