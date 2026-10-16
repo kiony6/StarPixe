@@ -4,6 +4,19 @@ using UnityEngine;
 namespace StarPixelSurge.Map
 {
     /// <summary>
+    /// 房间配置。
+    /// </summary>
+    [Serializable]
+    public class RoomConfig
+    {
+        public RoomType Type;
+        public Vector2Int Position;
+        public int Width = 10;
+        public int Height = 8;
+        public bool IsCleared;
+    }
+
+    /// <summary>
     /// 房间管理器：管理地图中所有房间的状态和类型。
     /// </summary>
     public class RoomManager : MonoBehaviour
