@@ -13,16 +13,16 @@ MonoBehaviour:
   m_Name: Class_arcane_sage
   m_EditorClassIdentifier: 
   Id: arcane_sage
-  DisplayName: 奥术贤者
-  Role: 0
+  DisplayName: 次元使者
+  Role: 3
   Portrait: {fileID: 0}
   BaseHealth: 95
   BaseMoveSpeed: 5.2
   BaseDamageMultiplier: 1.05
-  StartingSkillId: arcane_spear
+  StartingSkillId: gravity_well
   SkillPool:
+  - gravity_well
   - arcane_spear
-  - glacial_spike
-  - thunder_strike
-  - storm_ring
+  - homing_bees
   - radiant_orbs
+  - void_arrow

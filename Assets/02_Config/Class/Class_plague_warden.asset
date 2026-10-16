@@ -13,16 +13,16 @@ MonoBehaviour:
   m_Name: Class_plague_warden
   m_EditorClassIdentifier: 
   Id: plague_warden
-  DisplayName: 瘟疫守誓
-  Role: 4
+  DisplayName: 星辰祭司
+  Role: 2
   Portrait: {fileID: 0}
   BaseHealth: 120
   BaseMoveSpeed: 4.6
   BaseDamageMultiplier: 0.95
-  StartingSkillId: toxic_dart
+  StartingSkillId: holy_light
   SkillPool:
-  - toxic_dart
-  - poison_cloud
+  - holy_light
+  - star_beam
+  - radiant_orbs
+  - thunder_strike
   - frost_nova
-  - ember_trail
-  - phantom_slash

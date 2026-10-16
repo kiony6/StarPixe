@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cae643e77dc949af806f35b63b797e8, type: 3}
+  m_Name: Combo_combo_chainfrost
+  m_EditorClassIdentifier: 
+  Id: combo_chainfrost
+  DisplayName: 连锁霜寒
+  Description: 连锁闪电 + 冰霜新星满级冻结连锁目标。
+  SkillA: chain_lightning
+  SkillB: frost_nova
+  RequiredLevelA: 5
+  RequiredLevelB: 5
+  FullScreenEffectId: fx_combo_chainfrost
+  LinkedMechanicId: mech_combo_chainfrost
+  MultiplayerOnly: 0

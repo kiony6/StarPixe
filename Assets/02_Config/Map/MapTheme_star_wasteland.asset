@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a90f286bffde04dc2b4d0534ae0d257a, type: 3}
-  m_Name: MapTheme_frost_vault
+  m_Name: MapTheme_star_wasteland
   m_EditorClassIdentifier: 
-  Id: frost_vault
-  DisplayName: 寒霜地窖
-  TilePalettePath: Tiles/frost_vault
-  WeatherId: weather_snow
-  DisasterId: disaster_icequake
+  Id: star_wasteland
+  DisplayName: 星空荒原
+  TilePalettePath: Tiles/star_wasteland
+  WeatherId: weather_stardust
+  DisasterId: disaster_meteor_shower
   TrapIds:
-  - trap_ice_spike
-  - trap_freeze_zone
+  - trap_gravity_anomaly
+  - trap_radiant_burst
   ObstacleIds:
-  - obstacle_pillar
-  - obstacle_crystal
+  - obstacle_monolith
+  - obstacle_stalagmite

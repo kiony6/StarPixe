@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6283833efae0f3602674a500a2190955, type: 3}
+  m_Name: Class_shadow_assassin
+  m_EditorClassIdentifier: 
+  Id: shadow_assassin
+  DisplayName: 暗影刺客
+  Role: 1
+  Portrait: {fileID: 0}
+  BaseHealth: 105
+  BaseMoveSpeed: 5.8
+  BaseDamageMultiplier: 1.25
+  StartingSkillId: phantom_slash
+  SkillPool:
+  - phantom_slash
+  - shadow_dagger
+  - spinning_blade
+  - toxic_dart
+  - quake_hammer

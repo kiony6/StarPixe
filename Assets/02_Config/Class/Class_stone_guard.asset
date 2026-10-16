@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: stone_guard
   DisplayName: 磐石守卫
-  Role: 1
+  Role: 4
   Portrait: {fileID: 0}
   BaseHealth: 160
   BaseMoveSpeed: 4
