@@ -122,7 +122,7 @@ namespace StarPixelSurge.Network
 
             var speed = _stats.MoveSpeed > 0f ? _stats.MoveSpeed : moveSpeedFallback;
             var self = (Vector2)transform.position;
-            var next = self + _input * speed * Mathf.Max(0f, deltaTime);
+            var next = AvatarMotion.Integrate(self, _input, speed, deltaTime);
             transform.position = ResolveWalkable(self, next);
         }
 

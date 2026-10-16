@@ -27,21 +27,13 @@ namespace StarPixelSurge.Network
 
         private ITransport _transport;
         private float _tickAccumulator;
-        private float _renderFrame = -1f;
-
-        private readonly SortedDictionary<int, StateSnapshot> _snapshots = new SortedDictionary<int, StateSnapshot>();
-        private readonly List<EntityState> _interpolated = new List<EntityState>();
-
-        private StateSnapshot _renderFrom;
-        private StateSnapshot _renderTo;
-        private float _renderT;
-        private bool _hasRenderPair;
+        private readonly SnapshotInterpolator _interpolator = new SnapshotInterpolator();
 
         public NetworkRole Role { get; private set; }
 
         public int CurrentFrameIndex { get; private set; }
 
-        public int LatestSnapshotFrame { get; private set; } = -1;
+        public int LatestSnapshotFrame => _interpolator.LatestFrame;
 
         public uint RngState { get; set; }
 
@@ -72,12 +64,10 @@ namespace StarPixelSurge.Network
             _transport = transport;
             Role = role;
             CurrentFrameIndex = startFrame;
-            LatestSnapshotFrame = -1;
-            _renderFrame = -1f;
             _tickAccumulator = 0f;
-            _hasRenderPair = false;
-            _snapshots.Clear();
-            _interpolated.Clear();
+            _interpolator.SnapshotRetain = snapshotRetain;
+            _interpolator.InterpolationDelayFrames = interpolationDelayFrames;
+            _interpolator.Clear();
             Inputs.Clear();
         }
 
@@ -85,8 +75,7 @@ namespace StarPixelSurge.Network
         {
             Role = NetworkRole.None;
             _transport = null;
-            _snapshots.Clear();
-            _interpolated.Clear();
+            _interpolator.Clear();
             Inputs.Clear();
         }
 
@@ -170,19 +159,17 @@ namespace StarPixelSurge.Network
 
         public void ApplySnapshot(StateSnapshot snapshot)
         {
-            if (snapshot.FrameIndex <= LatestSnapshotFrame && _snapshots.ContainsKey(snapshot.FrameIndex))
+            var result = _interpolator.Apply(snapshot);
+            if (result == SnapshotApply.Duplicate)
             {
                 return;
             }
 
-            _snapshots[snapshot.FrameIndex] = snapshot;
             SnapshotReceived?.Invoke(snapshot);
 
-            if (snapshot.FrameIndex > LatestSnapshotFrame)
+            if (result == SnapshotApply.Advanced)
             {
-                LatestSnapshotFrame = snapshot.FrameIndex;
-                LatestFrameChanged?.Invoke(LatestSnapshotFrame);
-                PruneSnapshots();
+                LatestFrameChanged?.Invoke(_interpolator.LatestFrame);
             }
 
             SnapshotApplied?.Invoke(snapshot);
@@ -191,22 +178,12 @@ namespace StarPixelSurge.Network
         /// <summary>取当前插值后的实体状态列表（客户端渲染用）。</summary>
         public IReadOnlyList<EntityState> GetInterpolatedEntities()
         {
-            return _interpolated;
+            return _interpolator.Entities;
         }
 
         public bool TryGetInterpolated(int entityId, out EntityState state)
         {
-            for (var i = 0; i < _interpolated.Count; i++)
-            {
-                if (_interpolated[i].EntityId == entityId)
-                {
-                    state = _interpolated[i];
-                    return true;
-                }
-            }
-
-            state = default;
-            return false;
+            return _interpolator.TryGet(entityId, out state);
         }
 
         private void Update()
@@ -230,7 +207,7 @@ namespace StarPixelSurge.Network
             }
             else
             {
-                TickClient(Time.deltaTime);
+                _interpolator.Advance(Time.deltaTime, tickRate);
             }
         }
 
@@ -255,147 +232,6 @@ namespace StarPixelSurge.Network
                 BroadcastSnapshot(snapshot);
 
                 Inputs.PruneBefore(CurrentFrameIndex);
-            }
-        }
-
-        private void TickClient(float deltaTime)
-        {
-            if (_snapshots.Count == 0)
-            {
-                return;
-            }
-
-            if (_renderFrame < 0f)
-            {
-                _renderFrame = LatestSnapshotFrame - interpolationDelayFrames;
-            }
-
-            _renderFrame += deltaTime * tickRate;
-
-            var minFrame = FirstFrame();
-            var maxFrame = LatestSnapshotFrame;
-            if (_renderFrame < minFrame)
-            {
-                _renderFrame = minFrame;
-            }
-
-            var target = Mathf.FloorToInt(_renderFrame);
-            if (target > maxFrame)
-            {
-                target = maxFrame;
-            }
-
-            if (!_snapshots.TryGetValue(target, out var from))
-            {
-                from = GetClosestAtOrBefore(target, out _);
-            }
-
-            StateSnapshot to;
-            if (!_snapshots.TryGetValue(target + 1, out to))
-            {
-                to = GetClosestAfter(target, out var found);
-                if (!found)
-                {
-                    to = from;
-                }
-            }
-
-            _renderFrom = from;
-            _renderTo = to;
-
-            var span = Mathf.Max(1, to.FrameIndex - from.FrameIndex);
-            _renderT = Mathf.Clamp01((_renderFrame - from.FrameIndex) / span);
-            _hasRenderPair = true;
-
-            RebuildInterpolated();
-        }
-
-        private void RebuildInterpolated()
-        {
-            _interpolated.Clear();
-            if (!_hasRenderPair)
-            {
-                return;
-            }
-
-            var entities = StateSnapshot.Interpolate(_renderFrom, _renderTo, _renderT);
-            for (var i = 0; i < entities.Length; i++)
-            {
-                _interpolated.Add(entities[i]);
-            }
-        }
-
-        private int FirstFrame()
-        {
-            foreach (var frame in _snapshots.Keys)
-            {
-                return frame;
-            }
-
-            return LatestSnapshotFrame;
-        }
-
-        private StateSnapshot GetClosestAtOrBefore(int frame, out bool found)
-        {
-            StateSnapshot best = default;
-            found = false;
-            foreach (var pair in _snapshots)
-            {
-                if (pair.Key <= frame)
-                {
-                    best = pair.Value;
-                    found = true;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            if (!found && _snapshots.Count > 0)
-            {
-                best = _renderFrom;
-            }
-
-            return best;
-        }
-
-        private StateSnapshot GetClosestAfter(int frame, out bool found)
-        {
-            StateSnapshot best = default;
-            found = false;
-            foreach (var pair in _snapshots)
-            {
-                if (pair.Key > frame)
-                {
-                    best = pair.Value;
-                    found = true;
-                    break;
-                }
-            }
-
-            return best;
-        }
-
-        private void PruneSnapshots()
-        {
-            var cutoff = LatestSnapshotFrame - Mathf.Max(2, snapshotRetain);
-            var stale = new List<int>();
-            foreach (var frame in _snapshots.Keys)
-            {
-                if (frame < cutoff)
-                {
-                    stale.Add(frame);
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            for (var i = 0; i < stale.Count; i++)
-            {
-                _snapshots.Remove(stale[i]);
             }
         }
     }
