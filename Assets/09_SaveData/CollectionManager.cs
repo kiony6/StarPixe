@@ -110,7 +110,7 @@ namespace StarPixelSurge.SaveData
         public IReadOnlyDictionary<string, BestiaryEntry> GetBestiary() => _bestiary;
 
         /// <summary>获取已解锁成就。</summary>
-        public IReadOnlySet<string> GetUnlockedAchievements() => _unlockedAchievements;
+        public HashSet<string> GetUnlockedAchievements() => _unlockedAchievements;
 
         private void LoadData()
         {
