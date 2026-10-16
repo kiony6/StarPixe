@@ -120,6 +120,25 @@ namespace StarPixelSurge.UI
             return button;
         }
 
+        public static InputField CreateInputField(Transform parent, string name, string placeholder, Color background)
+        {
+            var image = CreateImage(parent, name, background);
+            var field = image.gameObject.AddComponent<InputField>();
+
+            var text = CreateText(image.transform, "Text", string.Empty, 26, TextAnchor.MiddleLeft, Color.white);
+            Stretch(text.rectTransform, 16f);
+            text.supportRichText = false;
+
+            var hint = CreateText(image.transform, "Placeholder", placeholder, 26, TextAnchor.MiddleLeft, new Color(0.6f, 0.62f, 0.7f));
+            Stretch(hint.rectTransform, 16f);
+
+            field.textComponent = text;
+            field.placeholder = hint;
+            field.lineType = InputField.LineType.SingleLine;
+            field.targetGraphic = image;
+            return field;
+        }
+
         public static void Stretch(RectTransform rect, float padding = 0f)
         {
             rect.anchorMin = Vector2.zero;

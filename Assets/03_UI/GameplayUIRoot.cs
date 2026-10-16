@@ -12,6 +12,7 @@ namespace StarPixelSurge.UI
 
         private Canvas _canvas;
         private ClassSelectionView _classSelection;
+        private RoomView _room;
         private HudView _hud;
         private BossHealthBarView _bossBar;
         private UpgradeSelectionView _upgrade;
@@ -50,6 +51,10 @@ namespace StarPixelSurge.UI
             _classSelection.Build(_canvas.transform);
             UIManager.Instance.Register(_classSelection);
 
+            _room = CreateView<RoomView>("RoomView");
+            _room.Build(_canvas.transform);
+            UIManager.Instance.Register(_room);
+
             _hud = CreateView<HudView>("HudView");
             _hud.Build(_canvas.transform);
             UIManager.Instance.Register(_hud);
@@ -77,6 +82,7 @@ namespace StarPixelSurge.UI
         private void OnMatchStarted(MatchStartedEvent evt)
         {
             UIManager.Instance.Close<ClassSelectionView>();
+            UIManager.Instance.Close<RoomView>();
             UIManager.Instance.Close<ResultView>();
             UIManager.Instance.Close<BossHealthBarView>();
             UIManager.Instance.Open<HudView>();
@@ -93,7 +99,18 @@ namespace StarPixelSurge.UI
             UIManager.Instance.Close<HudView>();
             UIManager.Instance.Close<BossHealthBarView>();
             UIManager.Instance.Close<ResultView>();
+            UIManager.Instance.Close<RoomView>();
             UIManager.Instance.Open<ClassSelectionView>();
+        }
+
+        /// <summary>进入联机房间与准备态界面。</summary>
+        public void ShowRoom()
+        {
+            UIManager.Instance.Close<HudView>();
+            UIManager.Instance.Close<BossHealthBarView>();
+            UIManager.Instance.Close<ResultView>();
+            UIManager.Instance.Close<ClassSelectionView>();
+            UIManager.Instance.Open<RoomView>();
         }
 
         public HudView Hud => _hud;

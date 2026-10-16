@@ -100,6 +100,11 @@ namespace StarPixelSurge.GameCore
 
             ResetNetworkPlayers();
 
+            if (NetManager.HasInstance && NetManager.Instance.State != RoomState.Idle)
+            {
+                NetManager.Instance.LeaveRoom();
+            }
+
             EnsureUi();
             GameplayUIRoot.Instance.ShowClassSelection();
             GameManager.Instance.ReturnToMainMenu();

@@ -46,8 +46,11 @@ namespace StarPixelSurge.UI
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
 
-            _hintText = UiFactory.CreateText(backdrop.transform, "Hint", "点击职业卡片立即开始对局", 26, TextAnchor.LowerCenter, new Color(0.7f, 0.75f, 0.9f));
+            _hintText = UiFactory.CreateText(backdrop.transform, "Hint", "点击职业卡片开始单机对局，或进入联机房间组队", 26, TextAnchor.LowerCenter, new Color(0.7f, 0.75f, 0.9f));
             UiFactory.SetAnchoredRect(_hintText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(1200f, 40f));
+
+            var roomButton = UiFactory.CreateButton(backdrop.transform, "RoomButton", "多人联机", new Color(0.25f, 0.6f, 0.5f), OnEnterRoom);
+            UiFactory.SetAnchoredRect(roomButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 100f), new Vector2(320f, 64f));
 
             OnClose();
         }
@@ -169,6 +172,14 @@ namespace StarPixelSurge.UI
             if (GameBootstrap.Instance != null)
             {
                 GameBootstrap.Instance.StartSinglePlayer(classId);
+            }
+        }
+
+        private void OnEnterRoom()
+        {
+            if (GameplayUIRoot.Instance != null)
+            {
+                GameplayUIRoot.Instance.ShowRoom();
             }
         }
 

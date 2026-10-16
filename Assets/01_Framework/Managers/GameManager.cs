@@ -134,6 +134,13 @@ namespace StarPixelSurge.Framework
             SetState(GameState.MainMenu);
         }
 
+        /// <summary>进入联机房间/准备态。</summary>
+        public void EnterRoom()
+        {
+            Time.timeScale = 1f;
+            SetState(GameState.Room);
+        }
+
         private void SetState(GameState next)
         {
             if (State == next)
