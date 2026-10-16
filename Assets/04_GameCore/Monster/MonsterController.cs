@@ -56,6 +56,11 @@ namespace StarPixelSurge.GameCore
 
         public void Configure(float health, float speed, float experience, bool boss = false, string archetypeId = "grunt")
         {
+            _archetypeId = string.IsNullOrEmpty(archetypeId) ? "grunt" : archetypeId;
+
+            // 根据怪物类型调整属性
+            ApplyArchetypeStats(ref health, ref speed, ref experience);
+
             maxHealth = Mathf.Max(1f, health);
             moveSpeed = Mathf.Max(0.1f, speed);
             experienceReward = experience;
@@ -64,12 +69,71 @@ namespace StarPixelSurge.GameCore
             _baseSpeed = moveSpeed;
             _baseContactDamage = contactDamage;
             _enraged = false;
-            transform.localScale = Vector3.one * (boss ? 1.8f : 1f);
-            ApplyVisual(archetypeId, boss);
+            transform.localScale = Vector3.one * (boss ? 1.8f : GetArchetypeScale(_archetypeId));
+            ApplyVisual(_archetypeId, boss);
 
             if (boss)
             {
                 EventBus.Publish(new BossSpawnedEvent(gameObject, bossDisplayName, maxHealth));
+            }
+        }
+
+        /// <summary>根据怪物类型调整属性。</summary>
+        private void ApplyArchetypeStats(ref float health, ref float speed, ref float experience)
+        {
+            switch (_archetypeId)
+            {
+                case "runner":
+                    //  runner: 快速移动，低血量
+                    health *= 0.7f;
+                    speed *= 1.6f;
+                    experience *= 0.9f;
+                    break;
+                case "swarmer":
+                    // swarmer: 普通速度，低血量
+                    health *= 0.6f;
+                    speed *= 1.1f;
+                    experience *= 0.7f;
+                    break;
+                case "charger":
+                    // charger: 冲锋型，中等速度
+                    health *= 1.0f;
+                    speed *= 1.2f;
+                    experience *= 1.0f;
+                    break;
+                case "brute":
+                    // brute: 重型，高血量慢速
+                    health *= 1.8f;
+                    speed *= 0.7f;
+                    experience *= 1.5f;
+                    break;
+                case "juggernaut":
+                    // juggernaut: 超重型
+                    health *= 2.5f;
+                    speed *= 0.5f;
+                    experience *= 2.0f;
+                    break;
+                case "elite":
+                    // elite: 精英怪
+                    health *= 1.5f;
+                    speed *= 1.1f;
+                    experience *= 2.5f;
+                    break;
+            }
+        }
+
+        /// <summary>根据怪物类型获取缩放。</summary>
+        private float GetArchetypeScale(string archetypeId)
+        {
+            switch (archetypeId)
+            {
+                case "swarmer": return 0.7f;
+                case "runner": return 0.8f;
+                case "charger": return 1.0f;
+                case "brute": return 1.3f;
+                case "juggernaut": return 1.6f;
+                case "elite": return 1.2f;
+                default: return 1.0f;
             }
         }
 

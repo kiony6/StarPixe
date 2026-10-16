@@ -133,9 +133,16 @@ namespace StarPixelSurge.Network
                 return;
             }
 
-            if (NetworkEntitySync.HasInstance)
+            try
             {
-                NetworkEntitySync.Instance.UnregisterLocal(_id);
+                if (NetworkEntitySync.HasInstance && _id > 0)
+                {
+                    NetworkEntitySync.Instance.UnregisterLocal(_id);
+                }
+            }
+            catch
+            {
+                // 场景切换时忽略销毁顺序导致的空引用
             }
 
             _registered = false;

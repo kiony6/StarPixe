@@ -27,7 +27,7 @@ namespace StarPixelSurge.Audio
         public const string SfxPickup = "sfx_pickup";
         public const string SfxHurt = "sfx_hurt";
 
-        [SerializeField] private float bgmVolume = 0.6f;
+        [SerializeField] private float bgmVolume = 0f; // 暂时关闭，等有真实音频资源再打开
         [SerializeField] private float sfxVolume = 0.8f;
         [SerializeField] private float crossfadePerSecond = 1.6f;
 

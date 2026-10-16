@@ -19,6 +19,10 @@ namespace StarPixelSurge.GameCore
         private SpriteRenderer _renderer;
         private string _skillId;
         private bool _critical;
+        private int _pierceCount;
+        private bool _homing;
+        private Transform _homingTarget;
+        private float _homingSpeed = 5f;
 
         public void Launch(Vector2 direction, float damage, float rangeScale = 1f)
         {
@@ -28,12 +32,35 @@ namespace StarPixelSurge.GameCore
         }
 
         /// <summary>施放技能时一次性完成外观与运动参数初始化。</summary>
-        public void Launch(Vector2 direction, float damage, float rangeScale, string skillId, Color color, float scale, bool critical = false)
+        public void Launch(Vector2 direction, float damage, float rangeScale, string skillId, Color color, float scale, bool critical = false, int pierce = 0, bool homing = false)
         {
             _skillId = skillId;
             _critical = critical;
+            _pierceCount = pierce;
+            _homing = homing;
+            if (_homing)
+            {
+                FindHomingTarget();
+            }
             SetVisual(color, scale);
             Launch(direction, damage, rangeScale);
+        }
+
+        private void FindHomingTarget()
+        {
+            if (MonsterController.Active.Count == 0) return;
+            _homingTarget = MonsterController.Active[0].transform;
+            var minDist = float.MaxValue;
+            var pos = transform.position;
+            foreach (var m in MonsterController.Active)
+            {
+                var dist = Vector2.Distance(pos, m.transform.position);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    _homingTarget = m.transform;
+                }
+            }
         }
 
         /// <summary>设置弹道的占位外观，按技能类型区分颜色，并按技能记录资源 id。</summary>
@@ -55,6 +82,17 @@ namespace StarPixelSurge.GameCore
 
         private void Update()
         {
+            // 追踪逻辑
+            if (_homing && _homingTarget != null)
+            {
+                var toTarget = (Vector2)_homingTarget.position - (Vector2)transform.position;
+                if (toTarget.magnitude > 0.01f)
+                {
+                    var targetDir = toTarget.normalized;
+                    _direction = Vector2.Lerp(_direction, targetDir, Time.deltaTime * _homingSpeed).normalized;
+                }
+            }
+
             transform.position += (Vector3)(_direction * speed * Time.deltaTime);
 
             _life -= Time.deltaTime;
@@ -77,6 +115,21 @@ namespace StarPixelSurge.GameCore
                 {
                     continue;
                 }
+
+                DealDamage(monster);
+
+                // 穿透逻辑
+                if (_pierceCount > 0)
+                {
+                    _pierceCount--;
+                }
+                else
+                {
+                    Despawn();
+                    return;
+                }
+            }
+        }
 
                 monster.TakeDamage(_damage);
                 var hitPoint = (Vector2)monster.transform.position;

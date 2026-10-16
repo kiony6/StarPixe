@@ -152,6 +152,34 @@ namespace StarPixelSurge.SaveData
             Data = new SaveDataModel();
         }
 
+        /// <summary>添加一条最高分记录，按分数降序排列，保留前 10 条。</summary>
+        public void AddHighScore(long score, int wave, string classId)
+        {
+            Data.HighScores.Add(new HighScoreEntry
+            {
+                PlayerName = Data.PlayerName,
+                Score = score,
+                Wave = wave,
+                ClassId = classId,
+                PlayTime = DateTime.UtcNow
+            });
+
+            Data.HighScores.Sort((a, b) => b.Score.CompareTo(a.Score));
+            if (Data.HighScores.Count > 10)
+            {
+                Data.HighScores.RemoveRange(10, Data.HighScores.Count - 10);
+            }
+
+            Save();
+        }
+
+        /// <summary>更新玩家昵称。</summary>
+        public void SetPlayerName(string name)
+        {
+            Data.PlayerName = string.IsNullOrEmpty(name) ? "Player" : name;
+            Save();
+        }
+
         private SaveDataModel ReadAndParse(string path)
         {
             try

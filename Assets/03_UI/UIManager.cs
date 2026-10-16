@@ -68,6 +68,8 @@ namespace StarPixelSurge.UI
             if (_views.TryGetValue(typeof(T), out var view))
             {
                 view.OnOpen();
+                // 把打开的视图移到最前面，确保在最上层
+                view.transform.SetAsLastSibling();
             }
             else
             {

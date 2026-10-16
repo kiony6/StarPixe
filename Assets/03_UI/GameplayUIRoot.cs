@@ -11,6 +11,10 @@ namespace StarPixelSurge.UI
         public static GameplayUIRoot Instance { get; private set; }
 
         private Canvas _canvas;
+        private MainMenuView _mainMenu;
+        private SettingsView _settings;
+        private PauseView _pause;
+        private LeaderboardView _leaderboard;
         private ClassSelectionView _classSelection;
         private RoomView _room;
         private OnlineLobbyView _onlineLobby;
@@ -49,6 +53,22 @@ namespace StarPixelSurge.UI
         {
             UiFactory.EnsureEventSystem();
             _canvas = UiFactory.CreateCanvas("GameplayCanvas", 100);
+
+            _mainMenu = CreateView<MainMenuView>("MainMenuView");
+            _mainMenu.Build(_canvas.transform);
+            UIManager.Instance.Register(_mainMenu);
+
+            _settings = CreateView<SettingsView>("SettingsView");
+            _settings.Build(_canvas.transform);
+            UIManager.Instance.Register(_settings);
+
+            _pause = CreateView<PauseView>("PauseView");
+            _pause.Build(_canvas.transform);
+            UIManager.Instance.Register(_pause);
+
+            _leaderboard = CreateView<LeaderboardView>("LeaderboardView");
+            _leaderboard.Build(_canvas.transform);
+            UIManager.Instance.Register(_leaderboard);
 
             _classSelection = CreateView<ClassSelectionView>("ClassSelectionView");
             _classSelection.Build(_canvas.transform);
@@ -91,6 +111,8 @@ namespace StarPixelSurge.UI
         {
             var go = new GameObject(name);
             go.transform.SetParent(_canvas.transform, false);
+            var rect = go.AddComponent<RectTransform>();
+            UiFactory.Stretch(rect);
             return go.AddComponent<T>();
         }
 
@@ -118,7 +140,21 @@ namespace StarPixelSurge.UI
             UIManager.Instance.Close<ResultView>();
             UIManager.Instance.Close<RoomView>();
             UIManager.Instance.Close<AffixPreviewView>();
+            UIManager.Instance.Close<MainMenuView>();
             UIManager.Instance.Open<ClassSelectionView>();
+        }
+
+        /// <summary>显示主菜单。</summary>
+        public void ShowMainMenu()
+        {
+            UIManager.Instance.Close<HudView>();
+            UIManager.Instance.Close<BossHealthBarView>();
+            UIManager.Instance.Close<ResultView>();
+            UIManager.Instance.Close<ClassSelectionView>();
+            UIManager.Instance.Close<RoomView>();
+            UIManager.Instance.Close<OnlineLobbyView>();
+            UIManager.Instance.Close<RoomLobbyView>();
+            UIManager.Instance.Open<MainMenuView>();
         }
 
         /// <summary>进入联机房间与准备态界面。</summary>

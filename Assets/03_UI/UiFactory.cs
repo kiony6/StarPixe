@@ -139,6 +139,26 @@ namespace StarPixelSurge.UI
             return field;
         }
 
+        public static Slider CreateSlider(Transform parent, string name, Color fillColor)
+        {
+            var bg = CreateImage(parent, name, new Color(0.15f, 0.18f, 0.25f));
+            var slider = bg.gameObject.AddComponent<Slider>();
+
+            var fillArea = CreateImage(bg.transform, "Fill Area", new Color(0f, 0f, 0f, 0f));
+            Stretch(fillArea.rectTransform, 4f);
+
+            var fill = CreateImage(fillArea.transform, "Fill", fillColor);
+            Stretch(fill.rectTransform);
+
+            slider.fillRect = fill.rectTransform;
+            slider.targetGraphic = fill;
+            slider.minValue = 0f;
+            slider.maxValue = 1f;
+            slider.value = 1f;
+
+            return slider;
+        }
+
         public static void Stretch(RectTransform rect, float padding = 0f)
         {
             rect.anchorMin = Vector2.zero;

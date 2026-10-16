@@ -19,6 +19,16 @@ namespace StarPixelSurge.SaveData
         public float SfxVolume = 1f;
     }
 
+    [Serializable]
+    public class HighScoreEntry
+    {
+        public string PlayerName;
+        public long Score;
+        public int Wave;
+        public string ClassId;
+        public DateTime PlayTime;
+    }
+
     /// <summary>
     /// 持久化存档模型。包含解锁、图鉴、积分与设置，并携带完整性校验值。
     /// </summary>
@@ -26,9 +36,12 @@ namespace StarPixelSurge.SaveData
     public class SaveDataModel
     {
         public int SchemaVersion = SaveSerializer.CurrentSchemaVersion;
+        public string PlayerName = "Player";
         public List<string> UnlockedClasses = new List<string>();
         public List<CodexEntry> Codex = new List<CodexEntry>();
+        public List<HighScoreEntry> HighScores = new List<HighScoreEntry>();
         public long Points;
+        public long TotalPlayTime;
         public SettingsRecord Settings = new SettingsRecord();
 
         /// <summary>最后保存的 UTC 时间戳（Ticks），供云同步冲突判定使用。</summary>

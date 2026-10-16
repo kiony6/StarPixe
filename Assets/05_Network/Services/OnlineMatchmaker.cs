@@ -48,7 +48,14 @@ namespace StarPixelSurge.Network
             try
             {
                 await RelayRelayService.InitializeAsync();
-                await VivoxVoiceAdapter.InitializeAsync();
+                try
+                {
+                    await VivoxVoiceAdapter.InitializeAsync();
+                }
+                catch (Exception vivoxEx)
+                {
+                    Debug.LogWarning($"[Matchmaker] Vivox 初始化失败（语音功能暂不可用）: {vivoxEx.Message}");
+                }
                 IsInitialized = true;
                 Debug.Log("[Matchmaker] 初始化完成");
             }

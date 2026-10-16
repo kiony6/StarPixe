@@ -62,14 +62,7 @@ namespace StarPixelSurge.GameCore
                 return;
             }
 
-            if (showClassSelection)
-            {
-                EnterLobby();
-            }
-            else
-            {
-                StartSinglePlayer();
-            }
+            EnterLobby();
         }
 
         /// <summary>进入职业选择大厅。</summary>
@@ -107,7 +100,7 @@ namespace StarPixelSurge.GameCore
             }
 
             EnsureUi();
-            GameplayUIRoot.Instance.ShowClassSelection();
+            GameplayUIRoot.Instance.ShowMainMenu();
             GameManager.Instance.ReturnToMainMenu();
         }
 
