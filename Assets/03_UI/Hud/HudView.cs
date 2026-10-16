@@ -58,6 +58,9 @@ namespace StarPixelSurge.UI
             _messageText = UiFactory.CreateText(panel, "MessageText", string.Empty, 32, TextAnchor.UpperCenter, Color.white);
             UiFactory.SetAnchoredRect(_messageText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -80f), new Vector2(1000f, 44f));
 
+            var hintText = UiFactory.CreateText(panel, "AffixHint", AffixPreviewView.ToggleHintText, 20, TextAnchor.LowerLeft, new Color(0.6f, 0.65f, 0.78f));
+            UiFactory.SetAnchoredRect(hintText.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, 20f), new Vector2(360f, 28f));
+
             OnClose();
         }
 

@@ -16,6 +16,7 @@ namespace StarPixelSurge.UI
         private HudView _hud;
         private BossHealthBarView _bossBar;
         private UpgradeSelectionView _upgrade;
+        private AffixPreviewView _affixPreview;
         private ResultView _result;
 
         private void Awake()
@@ -59,6 +60,10 @@ namespace StarPixelSurge.UI
             _hud.Build(_canvas.transform);
             UIManager.Instance.Register(_hud);
 
+            _affixPreview = CreateView<AffixPreviewView>("AffixPreviewView");
+            _affixPreview.Build(_canvas.transform);
+            UIManager.Instance.Register(_affixPreview);
+
             _bossBar = CreateView<BossHealthBarView>("BossHealthBarView");
             _bossBar.Build(_canvas.transform);
             UIManager.Instance.Register(_bossBar);
@@ -85,6 +90,7 @@ namespace StarPixelSurge.UI
             UIManager.Instance.Close<RoomView>();
             UIManager.Instance.Close<ResultView>();
             UIManager.Instance.Close<BossHealthBarView>();
+            UIManager.Instance.Close<AffixPreviewView>();
             UIManager.Instance.Open<HudView>();
         }
 
@@ -92,6 +98,7 @@ namespace StarPixelSurge.UI
         {
             UIManager.Instance.Close<HudView>();
             UIManager.Instance.Close<BossHealthBarView>();
+            UIManager.Instance.Close<AffixPreviewView>();
         }
 
         public void ShowClassSelection()
@@ -100,6 +107,7 @@ namespace StarPixelSurge.UI
             UIManager.Instance.Close<BossHealthBarView>();
             UIManager.Instance.Close<ResultView>();
             UIManager.Instance.Close<RoomView>();
+            UIManager.Instance.Close<AffixPreviewView>();
             UIManager.Instance.Open<ClassSelectionView>();
         }
 
@@ -110,6 +118,7 @@ namespace StarPixelSurge.UI
             UIManager.Instance.Close<BossHealthBarView>();
             UIManager.Instance.Close<ResultView>();
             UIManager.Instance.Close<ClassSelectionView>();
+            UIManager.Instance.Close<AffixPreviewView>();
             UIManager.Instance.Open<RoomView>();
         }
 
