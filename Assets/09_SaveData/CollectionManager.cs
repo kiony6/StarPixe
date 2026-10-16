@@ -59,6 +59,18 @@ namespace StarPixelSurge.SaveData
             }
         }
 
+        /// <summary>获取怪物图鉴列表。</summary>
+        public List<CollectionEntry> GetBestiary()
+        {
+            return MonsterCollection;
+        }
+
+        /// <summary>获取已解锁的成就列表。</summary>
+        public List<AchievementEntry> GetUnlockedAchievements()
+        {
+            return Achievements.FindAll(a => a.IsCompleted);
+        }
+
         /// <summary>记录击杀怪物，解锁图鉴。</summary>
         public void RecordMonsterKill(string monsterId, string monsterName)
         {

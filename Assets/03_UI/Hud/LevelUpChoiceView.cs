@@ -34,7 +34,7 @@ namespace StarPixelSurge.UI
             UiFactory.SetAnchoredRect(_choiceContainer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(700f, 400f));
 
             // 边框
-            var outline = container.AddComponent<Outline>();
+            var outline = container.gameObject.AddComponent<Outline>();
             outline.effectColor = new Color(0.2f, 0.9f, 1f, 1f);
             outline.effectDistance = new Vector2(2f, 2f);
 
@@ -72,7 +72,7 @@ namespace StarPixelSurge.UI
             var desc = UiFactory.CreateText(go.transform, "Desc", choice.Description, 16, TextAnchor.MiddleCenter, new Color(0.8f, 0.85f, 0.95f));
             UiFactory.SetAnchoredRect(desc.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0.5f), new Vector2(0f, -20f), new Vector2(580f, 30f));
 
-            _choiceButtons.Add(go);
+            _choiceButtons.Add(go.gameObject);
         }
 
         private void OnChoiceClicked(int index)
