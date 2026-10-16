@@ -117,6 +117,12 @@ namespace StarPixelSurge.UI
 
             var text = CreateText(image.transform, "Label", label, 24, TextAnchor.MiddleCenter, Color.white);
             Stretch(text.rectTransform);
+
+            // 添加按钮悬停效果
+            var highlight = image.gameObject.AddComponent<ButtonHighlight>();
+            highlight.normalColor = background;
+            highlight.highlightColor = Color.Lerp(background, Color.white, 0.2f);
+
             return button;
         }
 
