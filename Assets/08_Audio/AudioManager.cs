@@ -16,6 +16,8 @@ namespace StarPixelSurge.Audio
         public const string SfxLevelUp = "levelup";
         public const string SfxBoss = "boss";
         public const string SfxButton = "button";
+        public const string SfxPickup = "pickup";
+        public const string SfxHurt = "hurt";
 
         [Header("BGM")]
         [SerializeField] private AudioSource bgmSource;
@@ -92,6 +94,13 @@ namespace StarPixelSurge.Audio
         {
             Debug.Log($"[AudioManager] 播放音效: {sfxId}");
             // TODO: 根据sfxId播放对应的音效
+        }
+
+        /// <summary>播放终极技音效。</summary>
+        public void PlayUltimate()
+        {
+            Debug.Log("[AudioManager] 播放终极技音效");
+            // TODO: 播放终极技音效
         }
 
         /// <summary>设置BGM音量。</summary>
