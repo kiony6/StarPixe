@@ -28,7 +28,13 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bab42ffedaa952fcb5a0f290a5563ccd, type: 2}
   - {fileID: 11400000, guid: 7899b998c58949e2d33424fd78009bba, type: 2}
   - {fileID: 11400000, guid: 14c163516da120b52622f9294033ac41, type: 2}
-  Affixes:[]
+  Affixes:
+  - {fileID: 11400000, guid: d19ba933198793626b4c92826a8690a2, type: 2}
+  - {fileID: 11400000, guid: 42eef0b8d07fe55000f9e2bbb54428ef, type: 2}
+  - {fileID: 11400000, guid: c1561ba1bee3ccafea32fd0148299c68, type: 2}
+  - {fileID: 11400000, guid: a29cde2e0cf4c8d3dd94bf11308f6bf5, type: 2}
+  - {fileID: 11400000, guid: e5f07bff4904053c390449aa146c7996, type: 2}
+  - {fileID: 11400000, guid: 71f676d29af963d73ad9fa99b2805686, type: 2}
   Combos:
   - {fileID: 11400000, guid: 02e08bcd5f47d1874c07f8458259fc9c, type: 2}
   - {fileID: 11400000, guid: 62894a234c3cd422d9d690145129dbe8, type: 2}

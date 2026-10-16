@@ -13,6 +13,7 @@ namespace StarPixelSurge.UI
         private Canvas _canvas;
         private ClassSelectionView _classSelection;
         private HudView _hud;
+        private BossHealthBarView _bossBar;
         private UpgradeSelectionView _upgrade;
         private ResultView _result;
 
@@ -53,6 +54,10 @@ namespace StarPixelSurge.UI
             _hud.Build(_canvas.transform);
             UIManager.Instance.Register(_hud);
 
+            _bossBar = CreateView<BossHealthBarView>("BossHealthBarView");
+            _bossBar.Build(_canvas.transform);
+            UIManager.Instance.Register(_bossBar);
+
             _upgrade = CreateView<UpgradeSelectionView>("UpgradeSelectionView");
             _upgrade.Build(_canvas.transform);
             UIManager.Instance.Register(_upgrade);
@@ -73,17 +78,20 @@ namespace StarPixelSurge.UI
         {
             UIManager.Instance.Close<ClassSelectionView>();
             UIManager.Instance.Close<ResultView>();
+            UIManager.Instance.Close<BossHealthBarView>();
             UIManager.Instance.Open<HudView>();
         }
 
         private void OnMatchEnded(MatchEndedEvent evt)
         {
             UIManager.Instance.Close<HudView>();
+            UIManager.Instance.Close<BossHealthBarView>();
         }
 
         public void ShowClassSelection()
         {
             UIManager.Instance.Close<HudView>();
+            UIManager.Instance.Close<BossHealthBarView>();
             UIManager.Instance.Close<ResultView>();
             UIManager.Instance.Open<ClassSelectionView>();
         }

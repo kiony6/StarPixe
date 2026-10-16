@@ -75,6 +75,7 @@ namespace StarPixelSurge.UI
             EventBus.Subscribe<WaveLayerChangedEvent>(OnWaveLayerChanged);
             EventBus.Subscribe<MonsterKilledEvent>(OnMonsterKilled);
             EventBus.Subscribe<RoomMessageEvent>(OnRoomMessage);
+            EventBus.Subscribe<LootPickedEvent>(OnLootPicked);
         }
 
         private void OnDisable()
@@ -85,6 +86,7 @@ namespace StarPixelSurge.UI
             EventBus.Unsubscribe<WaveLayerChangedEvent>(OnWaveLayerChanged);
             EventBus.Unsubscribe<MonsterKilledEvent>(OnMonsterKilled);
             EventBus.Unsubscribe<RoomMessageEvent>(OnRoomMessage);
+            EventBus.Unsubscribe<LootPickedEvent>(OnLootPicked);
         }
 
         private void Update()
@@ -154,6 +156,18 @@ namespace StarPixelSurge.UI
             _messageText.text = evt.Message;
             _messageText.color = evt.Color;
             _messageTimer = 3f;
+        }
+
+        private void OnLootPicked(LootPickedEvent evt)
+        {
+            if (_messageText == null)
+            {
+                return;
+            }
+
+            _messageText.text = $"拾取 {evt.DisplayName}：{evt.Description}";
+            _messageText.color = evt.Color;
+            _messageTimer = 2f;
         }
 
         private void RefreshHealth()

@@ -13,6 +13,7 @@ namespace StarPixelSurge.GameCore
     {
         [SerializeField] private float treasureHealPercent = 0.3f;
         [SerializeField] private float treasureExperience = 12f;
+        [SerializeField] private int treasureDropCount = 3;
 
         private readonly HashSet<Vector2Int> _triggered = new HashSet<Vector2Int>();
         private RoomMap _map;
@@ -90,7 +91,12 @@ namespace StarPixelSurge.GameCore
                 _experience.AddExperience(treasureExperience);
             }
 
-            EventBus.Publish(new RoomMessageEvent("宝箱房间：生命恢复，获得经验！", new Color(1f, 0.85f, 0.35f)));
+            if (_map != null)
+            {
+                LootManager.Instance.SpawnDrops(_map, room, treasureDropCount);
+            }
+
+            EventBus.Publish(new RoomMessageEvent("宝箱房间：生命恢复，并散落了可拾取词缀！", new Color(1f, 0.85f, 0.35f)));
         }
 
         private void TriggerElite(Room room)

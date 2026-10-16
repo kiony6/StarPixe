@@ -27,6 +27,10 @@ namespace StarPixelSurge.GameCore
         private float _multMoveSpeed = 1f;
         private float _multDamage = 1f;
 
+        private float _multSkillRange = 1f;
+        private float _multSkillCooldown = 1f;
+        private int _bonusProjectiles;
+
         public float MaxHealth { get; private set; }
 
         public float MoveSpeed { get; private set; }
@@ -36,6 +40,15 @@ namespace StarPixelSurge.GameCore
         public float CritChance { get; private set; }
 
         public float PickupRange { get; private set; }
+
+        /// <summary>技能范围倍率，作用于弹道射程。</summary>
+        public float SkillRangeMultiplier { get; private set; } = 1f;
+
+        /// <summary>技能冷却倍率，越小冷却越短。</summary>
+        public float SkillCooldownMultiplier { get; private set; } = 1f;
+
+        /// <summary>额外弹道数量。</summary>
+        public int BonusProjectiles { get; private set; }
 
         public float CurrentHealth { get; private set; }
 
@@ -67,6 +80,9 @@ namespace StarPixelSurge.GameCore
             _multHealth = 1f;
             _multMoveSpeed = 1f;
             _multDamage = 1f;
+            _multSkillRange = 1f;
+            _multSkillCooldown = 1f;
+            _bonusProjectiles = 0;
 
             Recalculate();
             CurrentHealth = MaxHealth;
@@ -111,6 +127,83 @@ namespace StarPixelSurge.GameCore
             Recalculate();
             CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth);
             Broadcast();
+        }
+
+        public void MultiplyMoveSpeed(float factor)
+        {
+            _multMoveSpeed *= Mathf.Max(0.01f, factor);
+            Recalculate();
+        }
+
+        public void MultiplyDamage(float factor)
+        {
+            _multDamage *= Mathf.Max(0.01f, factor);
+            Recalculate();
+        }
+
+        public void MultiplySkillRange(float factor)
+        {
+            _multSkillRange *= Mathf.Max(0.01f, factor);
+            Recalculate();
+        }
+
+        public void MultiplySkillCooldown(float factor)
+        {
+            _multSkillCooldown *= Mathf.Clamp(factor, 0.1f, 5f);
+            Recalculate();
+        }
+
+        public void AddProjectiles(int amount)
+        {
+            _bonusProjectiles += amount;
+            Recalculate();
+        }
+
+        /// <summary>按词条定义应用加成，供宝箱掉落物拾取时调用。</summary>
+        public void ApplyAffix(AffixConfig affix)
+        {
+            if (affix == null)
+            {
+                return;
+            }
+
+            switch (affix.StatKey)
+            {
+                case "damage":
+                    if (affix.IsMultiplicative)
+                    {
+                        MultiplyDamage(1f + affix.Value);
+                    }
+                    else
+                    {
+                        AddDamageMultiplier(affix.Value);
+                    }
+
+                    break;
+                case "moveSpeed":
+                    if (affix.IsMultiplicative)
+                    {
+                        MultiplyMoveSpeed(1f + affix.Value);
+                    }
+                    else
+                    {
+                        AddMoveSpeed(affix.Value);
+                    }
+
+                    break;
+                case "critChance":
+                    AddCritChance(affix.Value);
+                    break;
+                case "range":
+                    MultiplySkillRange(1f + affix.Value);
+                    break;
+                case "cooldown":
+                    MultiplySkillCooldown(1f + affix.Value);
+                    break;
+                case "projectileCount":
+                    AddProjectiles(Mathf.RoundToInt(affix.Value));
+                    break;
+            }
         }
 
         public void TakeDamage(float amount)
@@ -158,6 +251,9 @@ namespace StarPixelSurge.GameCore
             DamageMultiplier = (baseDamageMultiplier + _bonusDamage) * _multDamage;
             CritChance = Mathf.Clamp01(baseCritChance + _bonusCrit);
             PickupRange = basePickupRange + _bonusPickup;
+            SkillRangeMultiplier = _multSkillRange;
+            SkillCooldownMultiplier = _multSkillCooldown;
+            BonusProjectiles = Mathf.Max(0, _bonusProjectiles);
         }
 
         private void Broadcast()

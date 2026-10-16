@@ -28,6 +28,7 @@ namespace StarPixelSurge.GameCore
         private readonly HashSet<string> _unlockedCombos = new HashSet<string>();
 
         private Transform _player;
+        private PlayerStats _playerStats;
         private GameObject _runtimeProjectileTemplate;
 
         public event Action<ComboConfig> ComboUnlocked;
@@ -39,6 +40,7 @@ namespace StarPixelSurge.GameCore
         public void SetPlayer(Transform player)
         {
             _player = player;
+            _playerStats = player != null ? player.GetComponentInParent<PlayerStats>() : null;
         }
 
         public bool HasSkill(string id)
@@ -121,7 +123,8 @@ namespace StarPixelSurge.GameCore
 
                 if (cooldown <= 0f)
                 {
-                    cooldown = CastSkill(config, pair.Value) ? config.GetCooldown(pair.Value) : 0.1f;
+                    var cooldownMultiplier = _playerStats != null ? _playerStats.SkillCooldownMultiplier : 1f;
+                    cooldown = CastSkill(config, pair.Value) ? config.GetCooldown(pair.Value) * cooldownMultiplier : 0.1f;
                 }
 
                 _cooldowns[pair.Key] = cooldown;
@@ -143,21 +146,29 @@ namespace StarPixelSurge.GameCore
             }
 
             var direction = ((Vector2)(target.transform.position - _player.position)).normalized;
-            var instance = PoolManager.Instance.Spawn(prefab, _player.position, Quaternion.identity);
-            var projectile = instance.GetComponent<Projectile>();
-            if (projectile == null)
-            {
-                return false;
-            }
-
             var damage = config.GetDamage(level);
             var stats = _player.GetComponentInParent<PlayerStats>();
-            if (stats != null)
-            {
-                damage = stats.RollDamage(damage);
-            }
 
-            projectile.Launch(direction, damage);
+            var count = 1 + (stats != null ? stats.BonusProjectiles : 0);
+            var rangeScale = stats != null ? stats.SkillRangeMultiplier : 1f;
+            var spreadStep = 12f * Mathf.Deg2Rad;
+            var baseAngle = Mathf.Atan2(direction.y, direction.x);
+            var startOffset = -(count - 1) * 0.5f;
+
+            for (var i = 0; i < count; i++)
+            {
+                var instance = PoolManager.Instance.Spawn(prefab, _player.position, Quaternion.identity);
+                var projectile = instance.GetComponent<Projectile>();
+                if (projectile == null)
+                {
+                    continue;
+                }
+
+                var shotDamage = stats != null ? stats.RollDamage(damage) : damage;
+                var angle = baseAngle + spreadStep * (startOffset + i);
+                var shotDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                projectile.Launch(shotDirection, shotDamage, rangeScale);
+            }
 
             if (EffectManager.HasInstance)
             {

@@ -17,11 +17,11 @@ namespace StarPixelSurge.GameCore
         private float _damage;
         private float _life;
 
-        public void Launch(Vector2 direction, float damage)
+        public void Launch(Vector2 direction, float damage, float rangeScale = 1f)
         {
             _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
             _damage = damage;
-            _life = lifetime;
+            _life = lifetime * Mathf.Max(0.1f, rangeScale);
         }
 
         private void Update()
