@@ -155,6 +155,9 @@ namespace StarPixelSurge.GameCore
             var baseAngle = Mathf.Atan2(direction.y, direction.x);
             var startOffset = -(count - 1) * 0.5f;
 
+            var color = NeonPalette.SkillType((int)config.Type);
+            var scale = ProjectileScale((int)config.Type);
+
             for (var i = 0; i < count; i++)
             {
                 var instance = PoolManager.Instance.Spawn(prefab, _player.position, Quaternion.identity);
@@ -167,7 +170,7 @@ namespace StarPixelSurge.GameCore
                 var shotDamage = stats != null ? stats.RollDamage(damage) : damage;
                 var angle = baseAngle + spreadStep * (startOffset + i);
                 var shotDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                projectile.Launch(shotDirection, shotDamage, rangeScale);
+                projectile.Launch(shotDirection, shotDamage, rangeScale, config.Id, color, scale);
             }
 
             if (EffectManager.HasInstance)
@@ -176,6 +179,22 @@ namespace StarPixelSurge.GameCore
             }
 
             return true;
+        }
+
+        /// <summary>按技能类型给出弹道占位尺寸倍率。</summary>
+        private static float ProjectileScale(int type)
+        {
+            switch (type)
+            {
+                case 2:
+                    return 1.4f;
+                case 1:
+                    return 1.15f;
+                case 3:
+                    return 1.1f;
+                default:
+                    return 1f;
+            }
         }
 
         private static MonsterController FindNearestMonster(Vector2 origin)
@@ -262,7 +281,7 @@ namespace StarPixelSurge.GameCore
 
             var go = new GameObject("Projectile_Runtime");
             var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = RuntimeSprite.CreateSquare(new Color(0.6f, 0.95f, 1f), 6);
+            renderer.sprite = RuntimeSprite.CreateDiamond(NeonPalette.Cyan, 6);
             renderer.sortingOrder = 8;
             go.AddComponent<Projectile>();
             go.SetActive(false);

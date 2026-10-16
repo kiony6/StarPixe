@@ -40,7 +40,9 @@ namespace StarPixelSurge.GameCore
 
             if (_renderer != null)
             {
-                _renderer.color = ResolveColor(affix);
+                var color = ResolveColor(affix);
+                _renderer.sprite = SpriteCatalog.Resolve("loot", ResolveId(affix), color, ResolveShape(affix), 10);
+                _renderer.color = Color.white;
             }
         }
 
@@ -89,19 +91,30 @@ namespace StarPixelSurge.GameCore
 
         private static Color ResolveColor(AffixConfig affix)
         {
+            return affix == null ? Color.white : NeonPalette.Rarity((int)affix.Rarity);
+        }
+
+        private static string ResolveId(AffixConfig affix)
+        {
+            return affix == null ? "common" : "affix_" + affix.Rarity.ToString().ToLowerInvariant();
+        }
+
+        /// <summary>按稀有度区分掉落物形状：普通方形、稀有条形环、史诗五角星。</summary>
+        private static RuntimeSprite.Shape ResolveShape(AffixConfig affix)
+        {
             if (affix == null)
             {
-                return Color.white;
+                return RuntimeSprite.Shape.Square;
             }
 
             switch (affix.Rarity)
             {
                 case AffixRarity.Epic:
-                    return new Color(0.8f, 0.4f, 1f);
+                    return RuntimeSprite.Shape.Star;
                 case AffixRarity.Rare:
-                    return new Color(0.35f, 0.7f, 1f);
+                    return RuntimeSprite.Shape.Ring;
                 default:
-                    return new Color(0.85f, 0.9f, 1f);
+                    return RuntimeSprite.Shape.Square;
             }
         }
 

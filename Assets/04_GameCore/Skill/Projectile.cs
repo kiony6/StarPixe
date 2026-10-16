@@ -16,12 +16,39 @@ namespace StarPixelSurge.GameCore
         private Vector2 _direction = Vector2.right;
         private float _damage;
         private float _life;
+        private SpriteRenderer _renderer;
+        private string _skillId;
 
         public void Launch(Vector2 direction, float damage, float rangeScale = 1f)
         {
             _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
             _damage = damage;
             _life = lifetime * Mathf.Max(0.1f, rangeScale);
+        }
+
+        /// <summary>施放技能时一次性完成外观与运动参数初始化。</summary>
+        public void Launch(Vector2 direction, float damage, float rangeScale, string skillId, Color color, float scale)
+        {
+            _skillId = skillId;
+            SetVisual(color, scale);
+            Launch(direction, damage, rangeScale);
+        }
+
+        /// <summary>设置弹道的占位外观，按技能类型区分颜色，并按技能记录资源 id。</summary>
+        public void SetVisual(Color color, float scale = 1f)
+        {
+            if (_renderer == null)
+            {
+                _renderer = GetComponent<SpriteRenderer>();
+            }
+
+            if (_renderer != null)
+            {
+                _renderer.sprite = SpriteCatalog.Resolve("projectiles", _skillId, color, RuntimeSprite.Shape.Diamond, 6);
+                _renderer.color = Color.white;
+            }
+
+            transform.localScale = Vector3.one * Mathf.Max(0.2f, scale);
         }
 
         private void Update()

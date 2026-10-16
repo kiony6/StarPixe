@@ -18,6 +18,7 @@ namespace StarPixelSurge.GameCore
             public float SpeedScale;
             public float ExperienceScale;
             public bool IsBoss;
+            public string ArchetypeId;
         }
 
         private struct Archetype
@@ -97,7 +98,8 @@ namespace StarPixelSurge.GameCore
                     HealthScale = health * elite.Health,
                     SpeedScale = speed * elite.Speed,
                     ExperienceScale = elite.Experience,
-                    IsBoss = false
+                    IsBoss = false,
+                    ArchetypeId = "elite"
                 });
             }
         }
@@ -115,7 +117,8 @@ namespace StarPixelSurge.GameCore
                 HealthScale = health * boss.Health,
                 SpeedScale = speed * boss.Speed,
                 ExperienceScale = boss.Experience,
-                IsBoss = true
+                IsBoss = true,
+                ArchetypeId = "boss"
             });
 
             for (var i = 0; i < guards; i++)
@@ -126,7 +129,8 @@ namespace StarPixelSurge.GameCore
                     HealthScale = health * grunt.Health,
                     SpeedScale = speed * grunt.Speed,
                     ExperienceScale = grunt.Experience,
-                    IsBoss = false
+                    IsBoss = false,
+                    ArchetypeId = "brute"
                 });
             }
         }
@@ -193,7 +197,8 @@ namespace StarPixelSurge.GameCore
                         HealthScale = config.HealthScale * archetype.Health,
                         SpeedScale = config.SpeedScale * archetype.Speed,
                         ExperienceScale = archetype.Experience,
-                        IsBoss = archetype.IsBoss
+                        IsBoss = archetype.IsBoss,
+                        ArchetypeId = archetype.IsBoss ? "boss" : group.MonsterId
                     });
                 }
             }
@@ -206,7 +211,8 @@ namespace StarPixelSurge.GameCore
                     HealthScale = config.HealthScale * boss.Health,
                     SpeedScale = config.SpeedScale * boss.Speed,
                     ExperienceScale = boss.Experience,
-                    IsBoss = true
+                    IsBoss = true,
+                    ArchetypeId = "boss"
                 });
             }
         }
@@ -221,7 +227,8 @@ namespace StarPixelSurge.GameCore
                     HealthScale = Mathf.Pow(healthGrowth, CurrentLayer - 1),
                     SpeedScale = Mathf.Pow(speedGrowth, CurrentLayer - 1),
                     ExperienceScale = 1f + CurrentLayer * 0.1f,
-                    IsBoss = false
+                    IsBoss = false,
+                    ArchetypeId = "grunt"
                 });
             }
         }
@@ -271,7 +278,7 @@ namespace StarPixelSurge.GameCore
             var experience = baseMonsterExperience * request.ExperienceScale;
 
             monster.SetTarget(_player);
-            monster.Configure(health, speed, experience, request.IsBoss);
+            monster.Configure(health, speed, experience, request.IsBoss, request.ArchetypeId);
         }
 
         /// <summary>按怪物 ID 返回基础属性倍率，使不同怪物分组具备差异化。</summary>

@@ -36,6 +36,8 @@ namespace StarPixelSurge.GameCore
         private float _baseSpeed;
         private float _baseContactDamage;
         private bool _enraged;
+        private SpriteRenderer _renderer;
+        private string _archetypeId = "grunt";
 
         private Transform _target;
         private float _attackTimer;
@@ -52,7 +54,7 @@ namespace StarPixelSurge.GameCore
         /// <summary>当前生命值，供网络快照采集。</summary>
         public float Health => _health;
 
-        public void Configure(float health, float speed, float experience, bool boss = false)
+        public void Configure(float health, float speed, float experience, bool boss = false, string archetypeId = "grunt")
         {
             maxHealth = Mathf.Max(1f, health);
             moveSpeed = Mathf.Max(0.1f, speed);
@@ -63,11 +65,65 @@ namespace StarPixelSurge.GameCore
             _baseContactDamage = contactDamage;
             _enraged = false;
             transform.localScale = Vector3.one * (boss ? 1.8f : 1f);
+            ApplyVisual(archetypeId, boss);
 
             if (boss)
             {
                 EventBus.Publish(new BossSpawnedEvent(gameObject, bossDisplayName, maxHealth));
             }
+        }
+
+        /// <summary>
+        /// 按怪物原型应用占位外观：颜色与形状区分类型，尺寸区分体型。
+        /// 真实美术资源存在时优先使用，缺失时回退到程序化贴图。
+        /// </summary>
+        private void ApplyVisual(string archetypeId, bool boss)
+        {
+            _archetypeId = string.IsNullOrEmpty(archetypeId) ? "grunt" : archetypeId;
+
+            if (_renderer == null)
+            {
+                _renderer = GetComponent<SpriteRenderer>();
+            }
+
+            if (_renderer == null)
+            {
+                return;
+            }
+
+            var color = boss ? NeonPalette.Crimson : NeonPalette.Archetype(_archetypeId);
+            _renderer.sprite = SpriteCatalog.Resolve("monsters", _archetypeId, color, ResolveShape(_archetypeId, boss), ResolvePixelSize(boss));
+            _renderer.color = Color.white;
+        }
+
+        private static RuntimeSprite.Shape ResolveShape(string archetypeId, bool boss)
+        {
+            if (boss)
+            {
+                return RuntimeSprite.Shape.Star;
+            }
+
+            switch (archetypeId)
+            {
+                case "runner":
+                    return RuntimeSprite.Shape.Triangle;
+                case "swarmer":
+                    return RuntimeSprite.Shape.Circle;
+                case "charger":
+                    return RuntimeSprite.Shape.Diamond;
+                case "brute":
+                case "juggernaut":
+                    return RuntimeSprite.Shape.Hexagon;
+                case "elite":
+                    return RuntimeSprite.Shape.Ring;
+                default:
+                    return RuntimeSprite.Shape.Diamond;
+            }
+        }
+
+        private static int ResolvePixelSize(bool boss)
+        {
+            return boss ? 16 : 8;
         }
 
         public void SetTarget(Transform target)
@@ -281,7 +337,7 @@ namespace StarPixelSurge.GameCore
 
             var go = new GameObject("EnemyProjectile_Runtime");
             var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = RuntimeSprite.CreateSquare(new Color(1f, 0.45f, 0.75f), 6);
+            renderer.sprite = RuntimeSprite.CreateCircle(NeonPalette.Magenta, 6);
             renderer.sortingOrder = 7;
             go.AddComponent<EnemyProjectile>();
             go.SetActive(false);

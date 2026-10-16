@@ -200,9 +200,26 @@ namespace StarPixelSurge.Network
             go.transform.localScale = state.Type == EntityType.Player ? Vector3.one * 0.8f : Vector3.one * 0.7f;
 
             var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = CreateSquare(ColorFor(state), 8);
+            renderer.sprite = RuntimeSprite.Get(ShapeFor(state), Color.white, 8);
+            renderer.color = ColorFor(state);
             renderer.sortingOrder = state.Type == EntityType.Player ? 9 : 5;
             return go;
+        }
+
+        /// <summary>按实体类型选择占位形状，配合渲染器颜色区分不同实体。</summary>
+        private static RuntimeSprite.Shape ShapeFor(EntityState state)
+        {
+            switch (state.Type)
+            {
+                case EntityType.Player:
+                    return RuntimeSprite.Shape.Circle;
+                case EntityType.Monster:
+                    return (state.Flags & EntityStateFlags.Boss) != 0 ? RuntimeSprite.Shape.Star : RuntimeSprite.Shape.Diamond;
+                case EntityType.Projectile:
+                    return RuntimeSprite.Shape.Square;
+                default:
+                    return RuntimeSprite.Shape.Diamond;
+            }
         }
 
         private static Color ColorFor(EntityState state)
@@ -210,34 +227,16 @@ namespace StarPixelSurge.Network
             switch (state.Type)
             {
                 case EntityType.Player:
-                    return new Color(0.35f, 0.9f, 1f);
+                    return NeonPalette.Cyan;
                 case EntityType.Monster:
                     return (state.Flags & EntityStateFlags.Boss) != 0
-                        ? new Color(1f, 0.5f, 0.15f)
-                        : new Color(0.9f, 0.3f, 0.75f);
+                        ? NeonPalette.Crimson
+                        : NeonPalette.Magenta;
                 case EntityType.Projectile:
-                    return new Color(1f, 1f, 0.6f);
+                    return NeonPalette.Amber;
                 default:
                     return Color.white;
             }
-        }
-
-        private static Sprite CreateSquare(Color color, int size)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point
-            };
-
-            var pixels = new Color[size * size];
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                pixels[i] = color;
-            }
-
-            texture.SetPixels(pixels);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
         }
     }
 }

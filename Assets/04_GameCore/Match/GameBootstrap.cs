@@ -420,7 +420,7 @@ namespace StarPixelSurge.GameCore
             go.transform.position = Vector3.zero;
 
             var spriteRenderer = go.AddComponent<SpriteRenderer>();
-            spriteRenderer.sprite = RuntimeSprite.CreateSquare(Color.cyan);
+            spriteRenderer.sprite = RuntimeSprite.CreateCircle(NeonPalette.Cyan);
             spriteRenderer.sortingOrder = 10;
 
             var body = go.AddComponent<Rigidbody2D>();
@@ -450,7 +450,7 @@ namespace StarPixelSurge.GameCore
 
             var go = new GameObject("Monster_Runtime");
             var spriteRenderer = go.AddComponent<SpriteRenderer>();
-            spriteRenderer.sprite = RuntimeSprite.CreateSquare(Color.magenta);
+            spriteRenderer.sprite = RuntimeSprite.CreateDiamond(NeonPalette.Archetype("grunt"));
             spriteRenderer.sortingOrder = 5;
 
             var collider = go.AddComponent<CircleCollider2D>();
@@ -461,29 +461,6 @@ namespace StarPixelSurge.GameCore
             go.SetActive(false);
             _runtimeMonsterTemplate = go;
             return go;
-        }
-    }
-
-    /// <summary>运行时占位贴图工具，仅在未配置美术资源时使用。</summary>
-    internal static class RuntimeSprite
-    {
-        public static Sprite CreateSquare(Color color, int size = 8)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point
-            };
-
-            var pixels = new Color[size * size];
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                pixels[i] = color;
-            }
-
-            texture.SetPixels(pixels);
-            texture.Apply();
-
-            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
         }
     }
 }
