@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Skill_spinning_blade
   m_EditorClassIdentifier: 
   Id: spinning_blade
-  DisplayName: 回旋刃
-  Description: 环绕自身的旋转刀刃。
+  DisplayName: 鍥炴棆鍒?
+  Description: 鐜粫鑷韩鐨勬棆杞垁鍒冦€?
   Type: 1
   Icon: {fileID: 0}
   BaseDamage: 11
@@ -26,4 +26,4 @@ MonoBehaviour:
   MaxLevel: 5
   EffectId: 
   ProjectilePrefabPath: 
-  ComboPartners:[]
+  ComboPartners: []

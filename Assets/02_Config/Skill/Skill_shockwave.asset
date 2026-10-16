@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Skill_shockwave
   m_EditorClassIdentifier: 
   Id: shockwave
-  DisplayName: 冲击波
-  Description: 以自身为中心震荡地面。
+  DisplayName: 鍐插嚮娉?
+  Description: 浠ヨ嚜韬负涓績闇囪崱鍦伴潰銆?
   Type: 2
   Icon: {fileID: 0}
   BaseDamage: 20
@@ -26,4 +26,4 @@ MonoBehaviour:
   MaxLevel: 5
   EffectId: 
   ProjectilePrefabPath: 
-  ComboPartners:[]
+  ComboPartners: []

@@ -115,7 +115,7 @@ namespace StarPixelSurge.Config
                 var key = keySelector(item);
                 if (string.IsNullOrEmpty(key))
                 {
-                    Debug.LogWarning($"[ConfigService] Config with empty Id skipped: {item.name}");
+                    Debug.LogWarning($"[ConfigService] Config with empty Id skipped: {item}");
                     continue;
                 }
 

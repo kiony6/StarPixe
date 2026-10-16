@@ -44,8 +44,8 @@ namespace StarPixelSurge.Map
             var guard = 0;
             while (order.Count < targetRooms && guard++ < 2000)
             {
-                var parent = order[random.Next(order.Count)];
-                var neighbour = RandomFreeNeighbour(parent, placed, gridW, gridH, random);
+                var parentCell = order[random.Next(order.Count)];
+                var neighbour = RandomFreeNeighbour(parentCell, placed, gridW, gridH, random);
                 if (neighbour == null)
                 {
                     continue;
@@ -56,7 +56,7 @@ namespace StarPixelSurge.Map
                 order.Add(child);
                 edges.Add(new Edge
                 {
-                    A = CellRect(parent, cellW, cellH, config),
+                    A = CellRect(parentCell, cellW, cellH, config),
                     B = CellRect(child, cellW, cellH, config)
                 });
             }

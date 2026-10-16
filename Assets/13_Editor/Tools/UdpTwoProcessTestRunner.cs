@@ -238,7 +238,7 @@ namespace StarPixelSurge.EditorTools
                 AssetDatabase.Refresh();
             }
 
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var saved = EditorSceneManager.SaveScene(scene, ScenePath);
             EditorSceneManager.CloseScene(scene, true);
             if (!saved)

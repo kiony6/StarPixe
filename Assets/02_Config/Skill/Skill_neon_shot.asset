@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Skill_neon_shot
   m_EditorClassIdentifier: 
   Id: neon_shot
-  DisplayName: 霓虹射击
-  Description: 高频霓虹能量射击。
+  DisplayName: 闇撹櫣灏勫嚮
+  Description: 楂橀闇撹櫣鑳介噺灏勫嚮銆?
   Type: 0
   Icon: {fileID: 0}
   BaseDamage: 10
@@ -26,4 +26,4 @@ MonoBehaviour:
   MaxLevel: 5
   EffectId: 
   ProjectilePrefabPath: 
-  ComboPartners:[]
+  ComboPartners: []

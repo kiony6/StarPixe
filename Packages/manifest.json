@@ -1,6 +1,9 @@
 {
   "dependencies": {
     "com.unity.2d.sprite": "1.0.0",
+    "com.unity.netcode.gameobjects": "1.15.1",
+    "com.unity.services.multiplayer": "2.2.3",
+    "com.unity.services.vivox": "16.11.0",
     "com.unity.test-framework": "1.1.33",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.audio": "1.0.0",

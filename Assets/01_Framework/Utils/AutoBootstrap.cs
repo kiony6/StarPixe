@@ -2,6 +2,7 @@ using StarPixelSurge.Audio;
 using StarPixelSurge.Effect;
 using StarPixelSurge.GameCore;
 using StarPixelSurge.Map;
+using StarPixelSurge.Network;
 using UnityEngine;
 
 namespace StarPixelSurge.Framework
@@ -22,20 +23,32 @@ namespace StarPixelSurge.Framework
                 return;
             }
 
-            if (Object.FindObjectOfType<GameBootstrap>() != null)
-            {
-                EnsureCamera();
-                EnsureEffectSystems();
-                EnsureAudioSystems();
-                return;
-            }
-
+            EnsureCoreSystems();
             EnsureCamera();
             EnsureEffectSystems();
             EnsureAudioSystems();
 
-            var go = new GameObject("GameBootstrap");
-            go.AddComponent<GameBootstrap>();
+            if (Object.FindObjectOfType<GameBootstrap>() == null)
+            {
+                var go = new GameObject("GameBootstrap");
+                go.AddComponent<GameBootstrap>();
+            }
+        }
+
+        /// <summary>确保核心单例系统存在（GameManager、NetManager 等）。</summary>
+        private static void EnsureCoreSystems()
+        {
+            if (!GameManager.HasInstance)
+            {
+                var go = new GameObject("GameManager");
+                go.AddComponent<GameManager>();
+            }
+
+            if (!NetManager.HasInstance)
+            {
+                var go = new GameObject("NetManager");
+                go.AddComponent<NetManager>();
+            }
         }
 
         private static void EnsureCamera()

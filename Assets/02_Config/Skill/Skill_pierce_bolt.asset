@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Skill_pierce_bolt
   m_EditorClassIdentifier: 
   Id: pierce_bolt
-  DisplayName: 穿刺电矢
-  Description: 可穿透多个目标的电矢。
+  DisplayName: 绌垮埡鐢电煝
+  Description: 鍙┛閫忓涓洰鏍囩殑鐢电煝銆?
   Type: 0
   Icon: {fileID: 0}
   BaseDamage: 14
@@ -26,4 +26,4 @@ MonoBehaviour:
   MaxLevel: 5
   EffectId: 
   ProjectilePrefabPath: 
-  ComboPartners:[]
+  ComboPartners: []
