@@ -1,125 +1,133 @@
 using System;
 using System.Collections.Generic;
-using StarPixelSurge.Framework;
 using UnityEngine;
 
 namespace StarPixelSurge.SaveData
 {
     /// <summary>
-    /// 成就定义。
+    /// 图鉴条目。
     /// </summary>
     [Serializable]
-    public class AchievementConfig
+    public class CollectionEntry
     {
         public string Id;
-        public string DisplayName;
+        public string Name;
         public string Description;
-        public int TargetValue;
+        public bool IsUnlocked;
+        public int KillCount;
     }
 
     /// <summary>
-    /// 图鉴条目：怪物图鉴。
+    /// 成就条目。
     /// </summary>
     [Serializable]
-    public class BestiaryEntry
+    public class AchievementEntry
     {
-        public string MonsterId;
-        public string MonsterName;
-        public int KillCount;
-        public bool IsDiscovered;
+        public string Id;
+        public string Name;
+        public string Description;
+        public bool IsCompleted;
+        public int Progress;
+        public int Target;
+        public int Reward; // 奖励积分
     }
 
     /// <summary>
-    /// 图鉴/成就管理器：管理怪物图鉴和成就解锁。
+    /// 图鉴成就管理器：管理怪物图鉴和玩家成就。
     /// </summary>
-    public class CollectionManager : MonoSingleton<CollectionManager>
+    public class CollectionManager : MonoBehaviour
     {
-        private Dictionary<string, BestiaryEntry> _bestiary = new Dictionary<string, BestiaryEntry>();
-        private Dictionary<string, int> _achievementProgress = new Dictionary<string, int>();
-        private HashSet<string> _unlockedAchievements = new HashSet<string>();
+        public static CollectionManager Instance { get; private set; }
 
-        /// <summary>怪物击杀事件。</summary>
-        public event Action<BestiaryEntry> OnMonsterKilled;
+        public List<CollectionEntry> MonsterCollection = new List<CollectionEntry>();
+        public List<AchievementEntry> Achievements = new List<AchievementEntry>();
 
-        /// <summary>成就解锁事件。</summary>
-        public event Action<AchievementConfig> OnAchievementUnlocked;
+        public event Action<CollectionEntry> OnMonsterUnlocked;
+        public event Action<AchievementEntry> OnAchievementCompleted;
 
-        protected override void OnSingletonAwake()
+        private void Awake()
         {
-            LoadData();
+            if (Instance == null)
+            {
+                Instance = this;
+                LoadDefaults();
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
 
-        /// <summary>记录怪物击杀。</summary>
+        /// <summary>记录击杀怪物，解锁图鉴。</summary>
         public void RecordMonsterKill(string monsterId, string monsterName)
         {
-            if (!_bestiary.TryGetValue(monsterId, out var entry))
+            var entry = MonsterCollection.Find(m => m.Id == monsterId);
+            if (entry == null)
             {
-                entry = new BestiaryEntry
+                entry = new CollectionEntry
                 {
-                    MonsterId = monsterId,
-                    MonsterName = monsterName,
-                    IsDiscovered = true,
+                    Id = monsterId,
+                    Name = monsterName,
+                    Description = $"击杀 {monsterName}",
+                    IsUnlocked = false,
+                    KillCount = 0
                 };
-                _bestiary[monsterId] = entry;
+                MonsterCollection.Add(entry);
             }
 
             entry.KillCount++;
-            OnMonsterKilled?.Invoke(entry);
-            SaveData();
+
+            if (!entry.IsUnlocked)
+            {
+                entry.IsUnlocked = true;
+                OnMonsterUnlocked?.Invoke(entry);
+                Debug.Log($"[Collection] 解锁图鉴: {monsterName}");
+            }
+
+            // 检查成就进度
+            CheckAchievementProgress("kill_total", 1);
         }
 
         /// <summary>记录成就进度。</summary>
         public void RecordAchievementProgress(string achievementId, int progress)
         {
-            if (_unlockedAchievements.Contains(achievementId))
-            {
-                return;
-            }
+            var achievement = Achievements.Find(a => a.Id == achievementId);
+            if (achievement == null || achievement.IsCompleted) return;
 
-            _achievementProgress.TryGetValue(achievementId, out var current);
-            current += progress;
-            _achievementProgress[achievementId] = current;
+            achievement.Progress += progress;
 
-            // 检查是否达到目标
-            var config = GetAchievementConfig(achievementId);
-            if (config != null && current >= config.TargetValue)
+            if (achievement.Progress >= achievement.Target)
             {
-                UnlockAchievement(config);
+                achievement.IsCompleted = true;
+                OnAchievementCompleted?.Invoke(achievement);
+                Debug.Log($"[Achievement] 完成成就: {achievement.Name}");
             }
         }
 
-        /// <summary>解锁成就。</summary>
-        private void UnlockAchievement(AchievementConfig config)
+        private void CheckAchievementProgress(string achievementId, int progress)
         {
-            if (!_unlockedAchievements.Contains(config.Id))
+            RecordAchievementProgress(achievementId, progress);
+        }
+
+        private void LoadDefaults()
+        {
+            // 默认怪物图鉴
+            if (MonsterCollection.Count == 0)
             {
-                _unlockedAchievements.Add(config.Id);
-                OnAchievementUnlocked?.Invoke(config);
-                SaveData();
+                MonsterCollection.Add(new CollectionEntry { Id = "grunt", Name = "小怪", Description = "最基础的怪物" });
+                MonsterCollection.Add(new CollectionEntry { Id = "fast", Name = "迅捷怪", Description = "移动速度很快" });
+                MonsterCollection.Add(new CollectionEntry { Id = "tank", Name = "坦克怪", Description = "血量很高" });
+                MonsterCollection.Add(new CollectionEntry { Id = "boss1", Name = "Boss", Description = "强大的首领" });
             }
-        }
 
-        /// <summary>获取成就配置（占位：从配置表读取）。</summary>
-        private AchievementConfig GetAchievementConfig(string id)
-        {
-            // TODO: 从配置表读取
-            return null;
-        }
-
-        /// <summary>获取所有图鉴条目。</summary>
-        public IReadOnlyDictionary<string, BestiaryEntry> GetBestiary() => _bestiary;
-
-        /// <summary>获取已解锁成就。</summary>
-        public HashSet<string> GetUnlockedAchievements() => _unlockedAchievements;
-
-        private void LoadData()
-        {
-            // TODO: 从存档加载
-        }
-
-        private void SaveData()
-        {
-            // TODO: 保存到存档
+            // 默认成就
+            if (Achievements.Count == 0)
+            {
+                Achievements.Add(new AchievementEntry { Id = "kill_10", Name = "初出茅庐", Description = "击杀10个怪物", Target = 10, Reward = 100 });
+                Achievements.Add(new AchievementEntry { Id = "kill_100", Name = "百人斩", Description = "击杀100个怪物", Target = 100, Reward = 500 });
+                Achievements.Add(new AchievementEntry { Id = "kill_1000", Name = "怪物克星", Description = "击杀1000个怪物", Target = 1000, Reward = 2000 });
+                Achievements.Add(new AchievementEntry { Id = "reach_level_10", Name = "成长之路", Description = "达到10级", Target = 10, Reward = 300 });
+            }
         }
     }
 }
