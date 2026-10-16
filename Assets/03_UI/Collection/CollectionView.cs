@@ -60,9 +60,9 @@ namespace StarPixelSurge.UI
             // 刷新怪物图鉴
             var bestiary = CollectionManager.Instance.GetBestiary();
             var bestiaryContent = "";
-            foreach (var entry in bestiary.Values)
+            foreach (var entry in bestiary)
             {
-                bestiaryContent += $"{entry.MonsterName}: 击杀 {entry.KillCount} 次\n";
+                bestiaryContent += $"{entry.Name}: 击杀 {entry.KillCount} 次\n";
             }
             if (string.IsNullOrEmpty(bestiaryContent))
             {
@@ -73,9 +73,9 @@ namespace StarPixelSurge.UI
             // 刷新成就
             var achievements = CollectionManager.Instance.GetUnlockedAchievements();
             var achievementContent = $"已解锁成就: {achievements.Count} 个\n";
-            foreach (var id in achievements)
+            foreach (var achievement in achievements)
             {
-                achievementContent += $"- {id}\n";
+                achievementContent += $"- {achievement.Name}\n";
             }
             _achievementText.text = achievementContent;
         }

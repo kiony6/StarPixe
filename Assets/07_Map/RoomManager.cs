@@ -1,22 +1,9 @@
 using System.Collections.Generic;
+using StarPixelSurge.Map;
 using UnityEngine;
 
 namespace StarPixelSurge.GameCore
 {
-    /// <summary>
-    /// 房间类型。
-    /// </summary>
-    public enum RoomType
-    {
-        Start,       // 起始房
-        Combat,      // 战斗房：刷怪物
-        Shop,        // 商店房：买道具
-        Treasure,    // 宝箱房：捡宝箱
-        Rest,        // 休息房：恢复生命
-        Elite,       // 精英房：打精英怪
-        Boss,        // Boss房：打Boss
-    }
-
     /// <summary>
     /// 房间数据。
     /// </summary>
@@ -95,10 +82,10 @@ namespace StarPixelSurge.GameCore
             if (index >= 14) return RoomType.Boss;
 
             var roll = Random.value;
-            if (roll < 0.6f) return RoomType.Combat;      // 60% 战斗房
-            if (roll < 0.75f) return RoomType.Shop;       // 15% 商店房
-            if (roll < 0.9f) return RoomType.Treasure;     // 15% 宝箱房
-            return RoomType.Rest;                          // 10% 休息房
+            if (roll < 0.6f) return RoomType.Normal;      // 60% 普通战斗房
+            if (roll < 0.75f) return RoomType.Treasure;    // 15% 宝箱房
+            if (roll < 0.9f) return RoomType.Elite;       // 15% 精英房
+            return RoomType.Normal;                        // 10% 普通房
         }
 
         private Vector2Int GetRandomAdjacentPosition()
