@@ -21,12 +21,21 @@ namespace StarPixelSurge.Network
     /// </summary>
     public class NetManager : MonoSingleton<NetManager>
     {
+        private const float LobbyResendInterval = 1f;
+        private const float MatchStartResendInterval = 0.5f;
+        private const float MatchStartResendWindow = 3f;
+
         private readonly RoomService _room = new RoomService();
         private readonly HostMigrationService _migration = new HostMigrationService();
         private readonly List<int> _playersCache = new List<int>();
         private readonly Dictionary<int, string> _classByPlayer = new Dictionary<int, string>();
 
         private ITransport _transport;
+        private float _lobbyResendTimer;
+        private float _matchStartResendTimer;
+        private float _matchStartResendElapsed;
+        private int _matchSeed;
+        private bool _resendingMatchStart;
 
         public RoomState State { get; private set; } = RoomState.Idle;
 
@@ -85,6 +94,41 @@ namespace StarPixelSurge.Network
 
             _transport.Pump(Time.deltaTime);
             _migration.Tick(Time.deltaTime);
+            TickLobbyResilience(Time.deltaTime);
+        }
+
+        /// <summary>
+        /// 真实 UDP 下控制类消息可能丢失。客户端在大厅内周期重发加入请求与准备态，
+        /// 房主在开局后短时间内重复广播开局消息，保证双方最终收敛。
+        /// </summary>
+        private void TickLobbyResilience(float deltaTime)
+        {
+            if (!IsHost && State == RoomState.Lobby && LocalPlayerId >= 0)
+            {
+                _lobbyResendTimer += deltaTime;
+                if (_lobbyResendTimer >= LobbyResendInterval)
+                {
+                    _lobbyResendTimer = 0f;
+                    _transport.SendToHost(NetworkSerializer.SerializeJoinRequest(LocalPlayerId));
+                    var member = _room.Get(LocalPlayerId);
+                    SetReady(member != null && member.Ready);
+                }
+            }
+
+            if (_resendingMatchStart)
+            {
+                _matchStartResendTimer += deltaTime;
+                _matchStartResendElapsed += deltaTime;
+                if (_matchStartResendElapsed >= MatchStartResendWindow)
+                {
+                    _resendingMatchStart = false;
+                }
+                else if (_matchStartResendTimer >= MatchStartResendInterval)
+                {
+                    _matchStartResendTimer = 0f;
+                    _transport.Broadcast(NetworkSerializer.SerializeMatchStart(_matchSeed, LastClassId));
+                }
+            }
         }
 
         public void CreateRoom()
@@ -204,6 +248,10 @@ namespace StarPixelSurge.Network
             OnRosterChanged();
 
             var seed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+            _matchSeed = seed;
+            _resendingMatchStart = true;
+            _matchStartResendTimer = 0f;
+            _matchStartResendElapsed = 0f;
             _transport.Broadcast(NetworkSerializer.SerializeMatchStart(seed, LastClassId));
 
             BeginLocalMatch(seed, true, LastClassId);
@@ -276,6 +324,9 @@ namespace StarPixelSurge.Network
 
         private void TearDownTransport()
         {
+            _lobbyResendTimer = 0f;
+            _resendingMatchStart = false;
+
             if (_transport == null)
             {
                 return;
