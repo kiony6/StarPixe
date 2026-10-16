@@ -38,6 +38,7 @@ namespace StarPixelSurge.SaveData
     public class CollectionManager : MonoBehaviour
     {
         public static CollectionManager Instance { get; private set; }
+        public static bool HasInstance => Instance != null;
 
         public List<CollectionEntry> MonsterCollection = new List<CollectionEntry>();
         public List<AchievementEntry> Achievements = new List<AchievementEntry>();

@@ -8,10 +8,12 @@ namespace StarPixelSurge.GameCore
     /// </summary>
     public enum RoomType
     {
+        Start,       // 起始房
         Combat,      // 战斗房：刷怪物
         Shop,        // 商店房：买道具
         Treasure,    // 宝箱房：捡宝箱
         Rest,        // 休息房：恢复生命
+        Elite,       // 精英房：打精英怪
         Boss,        // Boss房：打Boss
     }
 
