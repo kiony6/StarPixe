@@ -53,3 +53,12 @@ Entries discovered by the Agent during task execution should follow this format:
   - Deterministic in-process simulation (menu `StarPixelSurge/Network/Run Simulation *`, or batchmode `-executeMethod StarPixelSurge.EditorTools.NetworkSimulationRunner.RunFromCommandLine` with `-sim*` args).
   - Real UDP two-process playtest (menu `StarPixelSurge/Network/Run UDP Two-Process Test (Headless|Windowed)`, or batchmode `-executeMethod StarPixelSurge.EditorTools.UdpTwoProcessTestRunner.RunFromCommandLine` with `-playtest*` args). It builds a Player, launches host+client OS processes over real UDP, and aggregates each process's `-netResult` file.
   - The runtime playtest driver `NetworkPlaytestDriver` only activates when `-netRole host|client` is present on the command line, so it never affects normal gameplay.
+
+[Project Knowledge Summary]
+- Date: 2026-10-16
+- Context: Discovered by Agent while adding the one-command local check script, procedural visuals, and the sprite asset pipeline
+- Category: Build Methods | Workflow & Collaboration
+- Instructions:
+  - `tools/run-unity-checks.sh` is the single entry point for local verification; targets `all|compile|simulation|udp`, and it needs `UNITY_BIN` pointing at the Unity executable. The environment here has no Unity binary, so the script can only be syntax-checked (`bash -n`), not run.
+  - Runtime visuals resolve through `SpriteCatalog.Resolve(category, id, fallbackColor, fallbackShape, fallbackSize)`: real sprite from `Assets/11_Res/Resources/Sprites/<category>/<id>` if present, otherwise a procedural `RuntimeSprite` placeholder. Keep this fallback contract when adding art so the game runs with or without assets.
+  - Pixel-art import params are applied in bulk via menu `StarPixelSurge/Assets/Apply Sprite Import Settings`, and auto-applied to new textures by `SpriteImportPostprocessor`. Naming/category/import conventions live in `Assets/11_Res/Sprites/README.md`.
