@@ -37,6 +37,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: be0145479e2333ba743dab55e29b48c4, type: 2}
   - {fileID: 11400000, guid: 010dc8534b83f96284e864804b748c7a, type: 2}
   - {fileID: 11400000, guid: 581e8dc1d76ca327e470ab35c3793bce, type: 2}
+  - {fileID: 11400000, guid: 3e88a262209a9044ad2ff21db78c02ac, type: 2}
   Affixes:
   - {fileID: 11400000, guid: c1561ba1bee3ccafea32fd0148299c68, type: 2}
   - {fileID: 11400000, guid: d19ba933198793626b4c92826a8690a2, type: 2}
@@ -53,6 +54,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: fe98ffecb344d11147ea98bf68259d23, type: 2}
   - {fileID: 11400000, guid: 83ffbd8e38ee7e3f1d8748bad79e7a10, type: 2}
   - {fileID: 11400000, guid: b1d9b450615a43a4447318a192731576, type: 2}
+  - {fileID: 11400000, guid: 7f3b433885ddccf59a96e7bf1ab4a438, type: 2}
+  - {fileID: 11400000, guid: c3dd62f974598c8bc638c2f5d712e842, type: 2}
+  - {fileID: 11400000, guid: cec5938043e20f1ebb307e639c0eae31, type: 2}
+  - {fileID: 11400000, guid: 0e7ce95490be2f856a8c7f22a718a248, type: 2}
+  - {fileID: 11400000, guid: 28150f2d2f272fac4c8201847debf819, type: 2}
   Combos:
   - {fileID: 11400000, guid: 02e08bcd5f47d1874c07f8458259fc9c, type: 2}
   - {fileID: 11400000, guid: 62894a234c3cd422d9d690145129dbe8, type: 2}
@@ -87,4 +93,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1f76fe0d7d07f84771ac88bedcc904fa, type: 2}
   - {fileID: 11400000, guid: 1ebf15a2c474965eb332973616e0f743, type: 2}
   - {fileID: 11400000, guid: 3a565cc0ed3ac40591f6ea51dcca960c, type: 2}
-  MapThemes: []
+  MapThemes:
+  - {fileID: 11400000, guid: 698921f0c04ef65ff302c1da382e9827, type: 2}
+  - {fileID: 11400000, guid: 9fb250c56f6963bf317a99ae6ab73f23, type: 2}
