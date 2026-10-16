@@ -91,7 +91,7 @@ namespace StarPixelSurge.GameCore
             GameObject monster;
             if (monsterPrefab == null)
             {
-                monster = GameObject.CreatePrimitive(PrimitiveType.Cphere);
+                monster = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 monster.name = $"Monster_{_monsterInstances.Count}";
                 monster.transform.position = pos;
                 monster.transform.localScale = Vector3.one * 0.8f;

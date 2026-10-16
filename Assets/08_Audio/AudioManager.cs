@@ -8,6 +8,14 @@ namespace StarPixelSurge.Audio
     public class AudioManager : MonoBehaviour
     {
         public static AudioManager Instance { get; private set; }
+        public static bool HasInstance => Instance != null;
+
+        // 音效ID常量
+        public const string SfxSkill = "skill";
+        public const string SfxKill = "kill";
+        public const string SfxLevelUp = "levelup";
+        public const string SfxBoss = "boss";
+        public const string SfxButton = "button";
 
         [Header("BGM")]
         [SerializeField] private AudioSource bgmSource;
@@ -77,6 +85,13 @@ namespace StarPixelSurge.Audio
         {
             if (sfxSource == null || clip == null) return;
             sfxSource.PlayOneShot(clip);
+        }
+
+        /// <summary>根据ID播放音效。</summary>
+        public void PlaySfx(string sfxId)
+        {
+            Debug.Log($"[AudioManager] 播放音效: {sfxId}");
+            // TODO: 根据sfxId播放对应的音效
         }
 
         /// <summary>设置BGM音量。</summary>
