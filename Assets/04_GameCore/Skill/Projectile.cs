@@ -131,12 +131,11 @@ namespace StarPixelSurge.GameCore
             }
         }
 
-                monster.TakeDamage(_damage);
-                var hitPoint = (Vector2)monster.transform.position;
-                EventBus.Publish(new DamageDealtEvent(hitPoint, _damage, _critical));
-                Despawn();
-                return;
-            }
+        private void DealDamage(MonsterController monster)
+        {
+            monster.TakeDamage(_damage);
+            var hitPoint = (Vector2)monster.transform.position;
+            EventBus.Publish(new DamageDealtEvent(hitPoint, _damage, _critical));
         }
 
         private void Despawn()
