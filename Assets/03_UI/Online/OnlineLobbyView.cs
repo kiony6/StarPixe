@@ -14,9 +14,13 @@ namespace StarPixelSurge.UI
     {
         private InputField _roomNameInput;
         private InputField _joinCodeInput;
+        private InputField _ipInput;
+        private InputField _portInput;
         private Text _statusText;
         private Button _createButton;
         private Button _joinButton;
+        private Button _hostButton;
+        private Button _connectButton;
         private Button _backButton;
 
         private static readonly Color BackdropColor = new Color(0.03f, 0.03f, 0.06f, 0.98f);
@@ -61,6 +65,27 @@ namespace StarPixelSurge.UI
 
             _joinButton = UiFactory.CreateButton(joinPanel.transform, "JoinButton", "加入房间", new Color(0.25f, 0.6f, 0.5f), OnJoinRoom);
             UiFactory.SetAnchoredRect(_joinButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.25f), new Vector2(0.5f, 0.25f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(380f, 52f));
+
+            // IP直连面板
+            var directPanel = UiFactory.CreateNeonPanel(backdrop.transform, "DirectConnectPanel", new Color(0.12f, 0.15f, 0.2f, 1f), new Color(0.3f, 0.8f, 0.6f), 2f);
+            UiFactory.SetAnchoredRect(directPanel.rectTransform, new Vector2(0.5f, 0.08f), new Vector2(0.5f, 0.08f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(600f, 160f));
+
+            var directTitle = UiFactory.CreateText(directPanel.transform, "DirectTitle", "IP直连模式", 28, TextAnchor.UpperCenter, new Color(0.3f, 0.9f, 0.7f));
+            UiFactory.SetAnchoredRect(directTitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -15f), new Vector2(400f, 35f));
+
+            _ipInput = UiFactory.CreateInputField(directPanel.transform, "IPInput", "服务器IP: 185.242.232.191", new Color(0.15f, 0.16f, 0.25f, 1f));
+            UiFactory.SetAnchoredRect(_ipInput.GetComponent<RectTransform>(), new Vector2(0.3f, 0.65f), new Vector2(0.3f, 0.65f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(280f, 40f));
+            _ipInput.text = "185.242.232.191";
+
+            _portInput = UiFactory.CreateInputField(directPanel.transform, "PortInput", "端口: 7777", new Color(0.15f, 0.16f, 0.25f, 1f));
+            UiFactory.SetAnchoredRect(_portInput.GetComponent<RectTransform>(), new Vector2(0.75f, 0.65f), new Vector2(0.75f, 0.65f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(150f, 40f));
+            _portInput.text = "7777";
+
+            _hostButton = UiFactory.CreateButton(directPanel.transform, "HostButton", "作为主机", new Color(0.2f, 0.6f, 0.9f), OnStartHost);
+            UiFactory.SetAnchoredRect(_hostButton.GetComponent<RectTransform>(), new Vector2(0.3f, 0.25f), new Vector2(0.3f, 0.25f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(200f, 48f));
+
+            _connectButton = UiFactory.CreateButton(directPanel.transform, "ConnectButton", "连接服务器", new Color(0.2f, 0.7f, 0.5f), OnConnectToServer);
+            UiFactory.SetAnchoredRect(_connectButton.GetComponent<RectTransform>(), new Vector2(0.75f, 0.25f), new Vector2(0.75f, 0.25f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(200f, 48f));
 
             // 状态提示
             _statusText = UiFactory.CreateText(backdrop.transform, "Status", "", 24, TextAnchor.MiddleCenter, new Color(0.8f, 0.8f, 0.9f));
@@ -109,6 +134,37 @@ namespace StarPixelSurge.UI
         private void OnBack()
         {
             OnClose();
+        }
+
+        private void OnStartHost()
+        {
+            if (DirectConnectionManager.Instance == null) return;
+
+            int port = 7777;
+            int.TryParse(_portInput.text, out port);
+
+            SetBusy(true, "正在启动主机...");
+            DirectConnectionManager.Instance.StartHost(port);
+            SetBusy(false, $"主机已启动！端口: {port}");
+        }
+
+        private void OnConnectToServer()
+        {
+            if (DirectConnectionManager.Instance == null) return;
+
+            var ip = _ipInput.text.Trim();
+            int port = 7777;
+            int.TryParse(_portInput.text, out port);
+
+            if (string.IsNullOrEmpty(ip))
+            {
+                SetBusy(false, "请输入服务器IP");
+                return;
+            }
+
+            SetBusy(true, $"正在连接到 {ip}:{port}...");
+            DirectConnectionManager.Instance.ConnectToServer(ip, port);
+            SetBusy(false, "连接成功！");
         }
 
         private void SetBusy(bool busy, string status)
