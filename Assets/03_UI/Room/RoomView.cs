@@ -71,7 +71,7 @@ namespace StarPixelSurge.UI
             contentRoot = backdrop.gameObject;
             UiFactory.Stretch((RectTransform)contentRoot.GetComponent<RectTransform>());
 
-            var title = UiFactory.CreateText(backdrop.transform, "Title", "联机房间", 56, TextAnchor.UpperCenter, new Color(0.7f, 0.9f, 1f));
+            var title = UiFactory.CreateNeonText(backdrop.transform, "Title", "联机房间", 56, TextAnchor.UpperCenter, new Color(0.7f, 0.9f, 1f));
             UiFactory.SetAnchoredRect(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -60f), new Vector2(1200f, 70f));
 
             _roomInfoText = UiFactory.CreateText(backdrop.transform, "RoomInfo", string.Empty, 28, TextAnchor.UpperCenter, new Color(0.8f, 0.85f, 1f));
@@ -85,7 +85,7 @@ namespace StarPixelSurge.UI
 
         private Transform BuildLobbyPanel(Transform parent)
         {
-            var panel = UiFactory.CreateImage(parent, "LobbyPanel", PanelColor);
+            var panel = UiFactory.CreateNeonPanel(parent, "LobbyPanel", PanelColor, AccentColor, 3f);
             UiFactory.SetAnchoredRect((RectTransform)panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(760f, 470f));
 
             var hint = UiFactory.CreateText(panel.transform, "Hint", "创建房间或输入房间号加入", 28, TextAnchor.UpperCenter, new Color(0.82f, 0.86f, 1f));
@@ -192,6 +192,7 @@ namespace StarPixelSurge.UI
 
             var controls = UiFactory.CreateImage(panel, "Controls", PanelColor);
             UiFactory.SetAnchoredRect((RectTransform)controls.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 120f), new Vector2(1400f, 130f));
+            UiFactory.AddOutline(controls, AccentColor, 3f);
 
             var prev = UiFactory.CreateButton(controls.transform, "PrevClass", "◀", new Color(0.16f, 0.18f, 0.28f), () => CycleClass(-1));
             UiFactory.SetAnchoredRect(prev.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-520f, 0f), new Vector2(72f, 72f));
@@ -222,6 +223,7 @@ namespace StarPixelSurge.UI
         {
             var background = UiFactory.CreateImage(parent, "Slot", SlotColor);
             background.rectTransform.sizeDelta = new Vector2(320f, 400f);
+            UiFactory.AddOutline(background, NeonPalette.WithAlpha(AccentColor, 0.7f), 3f);
             var element = background.gameObject.AddComponent<LayoutElement>();
             element.preferredWidth = 320f;
             element.preferredHeight = 400f;

@@ -29,7 +29,7 @@ namespace StarPixelSurge.UI
             contentRoot = backdrop.gameObject;
             UiFactory.Stretch((RectTransform)contentRoot.GetComponent<RectTransform>());
 
-            var title = UiFactory.CreateText(backdrop.transform, "Title", "星界像素狂潮", 64, TextAnchor.UpperCenter, new Color(0.7f, 0.9f, 1f));
+            var title = UiFactory.CreateNeonText(backdrop.transform, "Title", "星界像素狂潮", 64, TextAnchor.UpperCenter, NeonPalette.Cyan, 5f);
             UiFactory.SetAnchoredRect(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -70f), new Vector2(1200f, 80f));
 
             var subtitle = UiFactory.CreateText(backdrop.transform, "Subtitle", "选择你的职业，进入无尽割草战场", 30, TextAnchor.UpperCenter, new Color(0.75f, 0.78f, 0.9f));
@@ -135,11 +135,15 @@ namespace StarPixelSurge.UI
 
             var roleColor = RoleColor(classConfig.Role);
 
+            UiFactory.AddOutline(card, roleColor, 3f);
+
             var accent = UiFactory.CreateImage(card.transform, "Accent", roleColor);
             UiFactory.SetAnchoredRect(accent.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(0f, 10f));
+            UiFactory.AddGlow(accent, NeonPalette.WithAlpha(roleColor, 0.7f), 5f);
 
             var portrait = UiFactory.CreateImage(card.transform, "Portrait", roleColor * 0.55f);
             UiFactory.SetAnchoredRect(portrait.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -46f), new Vector2(140f, 140f));
+            UiFactory.AddGlow(portrait, NeonPalette.WithAlpha(roleColor, 0.6f), 8f);
 
             var name = UiFactory.CreateText(card.transform, "Name", classConfig.DisplayName, 38, TextAnchor.UpperCenter, Color.white);
             UiFactory.SetAnchoredRect(name.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -200f), new Vector2(-30f, 50f));

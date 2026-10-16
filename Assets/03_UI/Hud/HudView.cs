@@ -37,16 +37,18 @@ namespace StarPixelSurge.UI
             _healthFill = UiFactory.CreateBar(panel, "HealthBar", TrackColor, HealthColor, out _healthText, "HP");
             UiFactory.SetAnchoredRect(_healthFill.transform.parent.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -24f), new Vector2(360f, 30f));
             ConfigureFill(_healthFill);
+            UiFactory.AddGlow(_healthFill, NeonPalette.WithAlpha(HealthColor, 0.6f), 5f);
 
             _expFill = UiFactory.CreateBar(panel, "ExpBar", TrackColor, ExpColor, out var expLabel, string.Empty);
             expLabel.text = string.Empty;
             UiFactory.SetAnchoredRect(_expFill.transform.parent.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -64f), new Vector2(360f, 16f));
             ConfigureFill(_expFill);
+            UiFactory.AddGlow(_expFill, NeonPalette.WithAlpha(ExpColor, 0.6f), 4f);
 
             _levelText = UiFactory.CreateText(panel, "LevelText", "Lv.1", 22, TextAnchor.MiddleLeft, Color.white);
             UiFactory.SetAnchoredRect(_levelText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -92f), new Vector2(360f, 28f));
 
-            _layerText = UiFactory.CreateText(panel, "LayerText", "波次 1", 30, TextAnchor.UpperCenter, new Color(1f, 0.85f, 0.35f));
+            _layerText = UiFactory.CreateNeonText(panel, "LayerText", "波次 1", 30, TextAnchor.UpperCenter, NeonPalette.Amber, 4f);
             UiFactory.SetAnchoredRect(_layerText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(500f, 40f));
 
             _killsText = UiFactory.CreateText(panel, "KillsText", "击杀 0", 26, TextAnchor.UpperRight, Color.white);

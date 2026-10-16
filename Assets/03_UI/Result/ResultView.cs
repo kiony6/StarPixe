@@ -21,8 +21,9 @@ namespace StarPixelSurge.UI
             panel.raycastTarget = true;
             contentRoot = panel.gameObject;
             UiFactory.SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760f, 520f));
+            UiFactory.AddOutline(panel, NeonPalette.Violet, 3f);
 
-            _titleText = UiFactory.CreateText(panel.transform, "Title", "对局结束", 52, TextAnchor.UpperCenter, new Color(1f, 0.4f, 0.45f));
+            _titleText = UiFactory.CreateNeonText(panel.transform, "Title", "对局结束", 52, TextAnchor.UpperCenter, NeonPalette.Crimson, 5f);
             UiFactory.SetAnchoredRect(_titleText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(-40f, 70f));
 
             _statsText = UiFactory.CreateText(panel.transform, "Stats", string.Empty, 30, TextAnchor.MiddleCenter, Color.white);

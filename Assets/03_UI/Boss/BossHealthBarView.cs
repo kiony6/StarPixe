@@ -32,6 +32,7 @@ namespace StarPixelSurge.UI
             _fill.fillMethod = Image.FillMethod.Horizontal;
             _fill.fillOrigin = (int)Image.OriginHorizontal.Left;
             _fill.fillAmount = 1f;
+            UiFactory.AddGlow(_fill, NeonPalette.WithAlpha(NormalColor, 0.65f), 6f);
 
             _nameText = UiFactory.CreateText(panel, "BossName", "首领", 26, TextAnchor.MiddleCenter, Color.white);
             UiFactory.SetAnchoredRect(_nameText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -44f), new Vector2(1200f, 34f));

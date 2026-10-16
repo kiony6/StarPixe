@@ -147,6 +147,42 @@ namespace StarPixelSurge.UI
             rect.offsetMax = new Vector2(-padding, -padding);
         }
 
+        /// <summary>为图形添加发光描边，营造霓虹轮廓。</summary>
+        public static Outline AddOutline(Graphic graphic, Color color, float distance = 3f)
+        {
+            var outline = graphic.gameObject.AddComponent<Outline>();
+            outline.effectColor = Framework.NeonPalette.WithAlpha(color, 0.85f);
+            outline.effectDistance = new Vector2(distance, -distance);
+            outline.useGraphicAlpha = false;
+            return outline;
+        }
+
+        /// <summary>为图形添加外发光阴影，营造霓虹光晕。</summary>
+        public static Shadow AddGlow(Graphic graphic, Color color, float distance = 4f, bool useGraphicAlpha = false)
+        {
+            var glow = graphic.gameObject.AddComponent<Shadow>();
+            glow.effectColor = color;
+            glow.effectDistance = new Vector2(distance, -distance);
+            glow.useGraphicAlpha = useGraphicAlpha;
+            return glow;
+        }
+
+        /// <summary>创建带霓虹描边的面板。</summary>
+        public static Image CreateNeonPanel(Transform parent, string name, Color fill, Color border, float borderWidth = 3f)
+        {
+            var panel = CreateImage(parent, name, fill);
+            AddOutline(panel, border, borderWidth);
+            return panel;
+        }
+
+        /// <summary>创建带发光效果的文本。</summary>
+        public static Text CreateNeonText(Transform parent, string name, string content, int fontSize, TextAnchor anchor, Color color, float glow = 3f)
+        {
+            var text = CreateText(parent, name, content, fontSize, anchor, color);
+            AddGlow(text, Framework.NeonPalette.WithAlpha(color, 0.55f), glow);
+            return text;
+        }
+
         public static void SetAnchoredRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 anchoredPosition, Vector2 size)
         {
             rect.anchorMin = anchorMin;

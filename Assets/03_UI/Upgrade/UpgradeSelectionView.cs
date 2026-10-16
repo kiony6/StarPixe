@@ -29,7 +29,7 @@ namespace StarPixelSurge.UI
             var root = (RectTransform)contentRoot.GetComponent<RectTransform>();
             UiFactory.Stretch(root);
 
-            _titleText = UiFactory.CreateText(dim.transform, "Title", "升级！选择一项强化", 44, TextAnchor.UpperCenter, Color.white);
+            _titleText = UiFactory.CreateNeonText(dim.transform, "Title", "升级！选择一项强化", 44, TextAnchor.UpperCenter, NeonPalette.Gold, 4f);
             UiFactory.SetAnchoredRect(_titleText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -80f), new Vector2(1000f, 60f));
 
             _cardContainer = UiFactory.CreateRect(dim.transform, "Cards");
@@ -99,6 +99,8 @@ namespace StarPixelSurge.UI
 
             var accent = UiFactory.CreateImage(card.transform, "Accent", RarityColor(option.Rarity));
             UiFactory.SetAnchoredRect(accent.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(0f, 8f));
+            UiFactory.AddOutline(card, RarityColor(option.Rarity), 3f);
+            UiFactory.AddGlow(accent, NeonPalette.WithAlpha(RarityColor(option.Rarity), 0.7f), 5f);
 
             var title = UiFactory.CreateText(card.transform, "Title", option.Title, 30, TextAnchor.UpperCenter, Color.white);
             UiFactory.SetAnchoredRect(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -34f), new Vector2(-40f, 80f));

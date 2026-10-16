@@ -42,8 +42,9 @@ namespace StarPixelSurge.UI
 
             var panel = UiFactory.CreateImage(dim.transform, "Panel", PanelColor);
             UiFactory.SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1200f, 760f));
+            UiFactory.AddOutline(panel, NeonPalette.Violet, 3f);
 
-            var title = UiFactory.CreateText(panel.transform, "Title", "词缀图鉴", 42, TextAnchor.UpperCenter, Color.white);
+            var title = UiFactory.CreateNeonText(panel.transform, "Title", "词缀图鉴", 42, TextAnchor.UpperCenter, NeonPalette.Violet, 4f);
             UiFactory.SetAnchoredRect(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f), new Vector2(1000f, 54f));
 
             _subtitleText = UiFactory.CreateText(panel.transform, "Subtitle", string.Empty, 24, TextAnchor.UpperCenter, new Color(0.8f, 0.85f, 1f));
