@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using StarPixelSurge.Config;
+using StarPixelSurge.Effect;
 using StarPixelSurge.GameCore;
 using StarPixelSurge.Map;
 using UnityEditor;
@@ -38,7 +39,12 @@ namespace StarPixelSurge.EditorTools
             camera.backgroundColor = new Color(0.04f, 0.03f, 0.08f);
             cameraGo.AddComponent<AudioListener>();
             cameraGo.AddComponent<CameraFollow>();
+            cameraGo.AddComponent<CameraFeedback>();
             cameraGo.transform.position = new Vector3(0f, 0f, -10f);
+
+            var effectsGo = new GameObject("EffectSystems");
+            effectsGo.AddComponent<GraphicsTierController>();
+            effectsGo.AddComponent<HitFeedback>();
 
             var bootstrapGo = new GameObject("GameBootstrap");
             bootstrapGo.AddComponent<GameBootstrap>();

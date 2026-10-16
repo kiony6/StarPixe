@@ -1,3 +1,4 @@
+using StarPixelSurge.Effect;
 using StarPixelSurge.GameCore;
 using StarPixelSurge.Map;
 using UnityEngine;
@@ -22,10 +23,13 @@ namespace StarPixelSurge.Framework
 
             if (Object.FindObjectOfType<GameBootstrap>() != null)
             {
+                EnsureCamera();
+                EnsureEffectSystems();
                 return;
             }
 
             EnsureCamera();
+            EnsureEffectSystems();
 
             var go = new GameObject("GameBootstrap");
             go.AddComponent<GameBootstrap>();
@@ -38,6 +42,11 @@ namespace StarPixelSurge.Framework
                 if (Camera.main.GetComponent<CameraFollow>() == null)
                 {
                     Camera.main.gameObject.AddComponent<CameraFollow>();
+                }
+
+                if (Camera.main.GetComponent<CameraFeedback>() == null)
+                {
+                    Camera.main.gameObject.AddComponent<CameraFeedback>();
                 }
 
                 return;
@@ -53,6 +62,18 @@ namespace StarPixelSurge.Framework
             camera.backgroundColor = new Color(0.04f, 0.03f, 0.08f);
             cameraGo.transform.position = new Vector3(0f, 0f, -10f);
             cameraGo.AddComponent<CameraFollow>();
+            cameraGo.AddComponent<CameraFeedback>();
+        }
+
+        /// <summary>装配特效反馈系统：分级控制器与打击反馈调度器。</summary>
+        private static void EnsureEffectSystems()
+        {
+            if (!GraphicsTierController.HasInstance)
+            {
+                var go = new GameObject("EffectSystems");
+                go.AddComponent<GraphicsTierController>();
+                go.AddComponent<HitFeedback>();
+            }
         }
     }
 }

@@ -168,9 +168,10 @@ namespace StarPixelSurge.GameCore
                 }
 
                 var shotDamage = stats != null ? stats.RollDamage(damage) : damage;
+                var critical = stats != null && stats.LastRollCritical;
                 var angle = baseAngle + spreadStep * (startOffset + i);
                 var shotDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                projectile.Launch(shotDirection, shotDamage, rangeScale, config.Id, color, scale);
+                projectile.Launch(shotDirection, shotDamage, rangeScale, config.Id, color, scale, critical);
             }
 
             if (EffectManager.HasInstance)
@@ -254,6 +255,9 @@ namespace StarPixelSurge.GameCore
                         var origin = _player != null ? _player.position : Vector3.zero;
                         EffectManager.Instance.Play(combo.FullScreenEffectId, origin);
                     }
+
+                    var ultimateOrigin = _player != null ? (Vector2)_player.position : Vector2.zero;
+                    EventBus.Publish(new UltimateTriggeredEvent(ultimateOrigin, combo.FullScreenEffectId));
                 }
             }
         }

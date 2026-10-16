@@ -302,13 +302,18 @@ namespace StarPixelSurge.GameCore
         public float RollDamage(float baseDamage)
         {
             var damage = baseDamage * DamageMultiplier;
+            LastRollCritical = false;
             if (CritChance > 0f && UnityEngine.Random.value < CritChance)
             {
                 damage *= 2f;
+                LastRollCritical = true;
             }
 
             return damage;
         }
+
+        /// <summary>最近一次 <see cref="RollDamage"/> 是否触发暴击，供打击反馈区分命中档位。</summary>
+        public bool LastRollCritical { get; private set; }
 
         private void Recalculate()
         {

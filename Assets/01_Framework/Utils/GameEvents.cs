@@ -148,4 +148,43 @@ namespace StarPixelSurge.Framework
             Boss = boss;
         }
     }
+
+    /// <summary>玩家造成一次伤害，用于打击反馈（闪光、拖尾、震屏）。</summary>
+    public readonly struct DamageDealtEvent
+    {
+        public readonly Vector2 Position;
+        public readonly float Damage;
+        public readonly bool Critical;
+
+        public DamageDealtEvent(Vector2 position, float damage, bool critical)
+        {
+            Position = position;
+            Damage = damage;
+            Critical = critical;
+        }
+    }
+
+    /// <summary>终极技或组合技触发，用于镜头震动、闪白、曝光提升与顿帧。</summary>
+    public readonly struct UltimateTriggeredEvent
+    {
+        public readonly Vector2 Position;
+        public readonly string EffectId;
+
+        public UltimateTriggeredEvent(Vector2 position, string effectId)
+        {
+            Position = position;
+            EffectId = effectId;
+        }
+    }
+
+    /// <summary>特效分级档位变更。</summary>
+    public readonly struct GraphicsTierChangedEvent
+    {
+        public readonly GraphicsTier Tier;
+
+        public GraphicsTierChangedEvent(GraphicsTier tier)
+        {
+            Tier = tier;
+        }
+    }
 }

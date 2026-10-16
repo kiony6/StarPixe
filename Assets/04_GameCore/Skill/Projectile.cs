@@ -18,6 +18,7 @@ namespace StarPixelSurge.GameCore
         private float _life;
         private SpriteRenderer _renderer;
         private string _skillId;
+        private bool _critical;
 
         public void Launch(Vector2 direction, float damage, float rangeScale = 1f)
         {
@@ -27,9 +28,10 @@ namespace StarPixelSurge.GameCore
         }
 
         /// <summary>施放技能时一次性完成外观与运动参数初始化。</summary>
-        public void Launch(Vector2 direction, float damage, float rangeScale, string skillId, Color color, float scale)
+        public void Launch(Vector2 direction, float damage, float rangeScale, string skillId, Color color, float scale, bool critical = false)
         {
             _skillId = skillId;
+            _critical = critical;
             SetVisual(color, scale);
             Launch(direction, damage, rangeScale);
         }
@@ -77,6 +79,8 @@ namespace StarPixelSurge.GameCore
                 }
 
                 monster.TakeDamage(_damage);
+                var hitPoint = (Vector2)monster.transform.position;
+                EventBus.Publish(new DamageDealtEvent(hitPoint, _damage, _critical));
                 Despawn();
                 return;
             }
