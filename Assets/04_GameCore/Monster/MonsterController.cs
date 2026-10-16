@@ -55,7 +55,11 @@ namespace StarPixelSurge.GameCore
         public float Health => _health;
 
         /// <summary>移动速度。</summary>
-        public float MoveSpeed => moveSpeed;
+        public float MoveSpeed
+        {
+            get => moveSpeed;
+            set => moveSpeed = value;
+        }
 
         public void Configure(float health, float speed, float experience, bool boss = false, string archetypeId = "grunt")
         {
