@@ -67,6 +67,17 @@ namespace StarPixelSurge.Framework
         }
     }
 
+    /// <summary>Boss 波次触发。</summary>
+    public readonly struct BossWaveEvent
+    {
+        public readonly int Layer;
+
+        public BossWaveEvent(int layer)
+        {
+            Layer = layer;
+        }
+    }
+
     /// <summary>界面提示消息（进入特殊房间、触发事件等）。</summary>
     public readonly struct RoomMessageEvent
     {
