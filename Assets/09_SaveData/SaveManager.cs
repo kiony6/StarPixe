@@ -1,19 +1,22 @@
 using System;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 using StarPixelSurge.Framework;
 using UnityEngine;
 
 namespace StarPixelSurge.SaveData
 {
     /// <summary>
-    /// 存档管理器：本地加密读写、校验和验证、备份回退，并预留云同步入口。
+    /// 存档管理器：本地加密读写、完整性校验、备份回退与云同步入口。
+    ///
+    /// 写入采用「临时文件 + 原子替换」策略，任意时刻中断都不会破坏上一份有效存档
+    /// （设计正确性属性 8）。读取失败时回退到最近一份有效备份并提示玩家（需求 11.5）。
     /// </summary>
     public class SaveManager : MonoSingleton<SaveManager>
     {
-        private const string FileName = "save.json";
+        private const string FileName = "save.dat";
         private const string BackupSuffix = ".bak";
+        private const string TempSuffix = ".tmp";
+        private const string LegacyFileName = "save.json";
 
         [SerializeField] private bool enableCloudSync = false;
 
@@ -21,9 +24,18 @@ namespace StarPixelSurge.SaveData
 
         public SaveDataModel Data { get; private set; } = new SaveDataModel();
 
-        private string FilePath => Path.Combine(Application.persistentDataPath, FileName);
+        /// <summary>最近一次加载是否回退了备份，供界面提示玩家。</summary>
+        public bool LastLoadUsedBackup { get; private set; }
+
+        private string SaveDirectory => Application.persistentDataPath;
+
+        private string FilePath => Path.Combine(SaveDirectory, FileName);
 
         private string BackupPath => FilePath + BackupSuffix;
+
+        private string TempPath => FilePath + TempSuffix;
+
+        private string LegacyPath => Path.Combine(SaveDirectory, LegacyFileName);
 
         protected override void OnSingletonAwake()
         {
@@ -37,29 +49,31 @@ namespace StarPixelSurge.SaveData
 
         public void Load()
         {
-            try
+            LastLoadUsedBackup = false;
+
+            var primary = ReadAndParse(FilePath);
+            if (primary != null)
             {
-                if (File.Exists(FilePath))
-                {
-                    var data = JsonUtility.FromJson<SaveDataModel>(File.ReadAllText(FilePath));
-                    if (data != null && VerifyChecksum(data))
-                    {
-                        Data = data;
-                        return;
-                    }
-
-                    Debug.LogWarning("[SaveManager] Save checksum mismatch, falling back to backup.");
-                }
-
-                if (File.Exists(BackupPath))
-                {
-                    Data = JsonUtility.FromJson<SaveDataModel>(File.ReadAllText(BackupPath)) ?? new SaveDataModel();
-                    return;
-                }
+                Data = primary;
+                return;
             }
-            catch (Exception e)
+
+            var backup = ReadAndParse(BackupPath);
+            if (backup != null)
             {
-                Debug.LogError($"[SaveManager] Load failed: {e.Message}");
+                Data = backup;
+                LastLoadUsedBackup = true;
+                Debug.LogWarning("[SaveManager] Primary save invalid, restored from backup.");
+                return;
+            }
+
+            var legacy = LoadLegacy();
+            if (legacy != null)
+            {
+                Data = legacy;
+                Debug.Log("[SaveManager] Migrated legacy plaintext save to encrypted format.");
+                Save();
+                return;
             }
 
             Data = new SaveDataModel();
@@ -69,19 +83,13 @@ namespace StarPixelSurge.SaveData
         {
             try
             {
-                Data.Checksum = ComputeChecksum(Data);
-                var json = JsonUtility.ToJson(Data, true);
+                var payload = SaveSerializer.Serialize(Data);
+                File.WriteAllText(TempPath, payload);
+                CommitTemp();
 
-                if (File.Exists(FilePath))
+                if (enableCloudSync)
                 {
-                    File.Copy(FilePath, BackupPath, true);
-                }
-
-                File.WriteAllText(FilePath, json);
-
-                if (enableCloudSync && _cloudService != null && _cloudService.IsAvailable)
-                {
-                    _cloudService.Upload(Data);
+                    SyncCloud();
                 }
             }
             catch (Exception e)
@@ -90,39 +98,96 @@ namespace StarPixelSurge.SaveData
             }
         }
 
+        /// <summary>原子落盘：优先替换并留备份，平台不支持替换时回退为拷贝 + 移动。</summary>
+        private void CommitTemp()
+        {
+            if (File.Exists(FilePath))
+            {
+                try
+                {
+                    File.Replace(TempPath, FilePath, BackupPath);
+                    return;
+                }
+                catch (Exception)
+                {
+                    File.Copy(FilePath, BackupPath, true);
+                }
+            }
+
+            if (File.Exists(FilePath))
+            {
+                File.Delete(FilePath);
+            }
+
+            File.Move(TempPath, FilePath);
+        }
+
+        /// <summary>用备份覆盖当前存档并重新加载（需求 11.5 手动恢复入口）。</summary>
+        public bool RestoreBackup()
+        {
+            var backup = ReadAndParse(BackupPath);
+            if (backup == null)
+            {
+                return false;
+            }
+
+            Data = backup;
+            Save();
+            return true;
+        }
+
+        /// <summary>网络可用时把当前存档同步至云端（本期云服务为本地占位实现）。</summary>
+        public void SyncCloud()
+        {
+            if (_cloudService == null || !_cloudService.IsAvailable)
+            {
+                return;
+            }
+
+            _cloudService.Upload(Data);
+        }
+
         public void ResetToDefault()
         {
             Data = new SaveDataModel();
         }
 
-        private static bool VerifyChecksum(SaveDataModel data)
+        private SaveDataModel ReadAndParse(string path)
         {
-            if (string.IsNullOrEmpty(data.Checksum))
+            try
             {
-                return false;
-            }
-
-            var expected = data.Checksum;
-            return string.Equals(ComputeChecksum(data), expected, StringComparison.Ordinal);
-        }
-
-        private static string ComputeChecksum(SaveDataModel data)
-        {
-            var original = data.Checksum;
-            data.Checksum = string.Empty;
-            var json = JsonUtility.ToJson(data);
-            data.Checksum = original;
-
-            using (var sha = SHA256.Create())
-            {
-                var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(json));
-                var builder = new StringBuilder(hash.Length * 2);
-                foreach (var b in hash)
+                if (!File.Exists(path))
                 {
-                    builder.Append(b.ToString("x2"));
+                    return null;
                 }
 
-                return builder.ToString();
+                return SaveSerializer.Deserialize(File.ReadAllText(path));
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[SaveManager] Read failed ({path}): {e.Message}");
+                return null;
+            }
+        }
+
+        private SaveDataModel LoadLegacy()
+        {
+            try
+            {
+                if (!File.Exists(LegacyPath))
+                {
+                    return null;
+                }
+
+                var text = File.ReadAllText(LegacyPath);
+                return SaveSerializer.LooksLikePlaintext(text)
+                    ? SaveSerializer.DeserializeLegacyPlaintext(text)
+                    : null;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[SaveManager] Legacy load failed: {e.Message}");
+                return null;
             }
         }
     }

@@ -25,11 +25,15 @@ namespace StarPixelSurge.SaveData
     [Serializable]
     public class SaveDataModel
     {
-        public int SchemaVersion = 1;
+        public int SchemaVersion = SaveSerializer.CurrentSchemaVersion;
         public List<string> UnlockedClasses = new List<string>();
         public List<CodexEntry> Codex = new List<CodexEntry>();
         public long Points;
         public SettingsRecord Settings = new SettingsRecord();
+
+        /// <summary>最后保存的 UTC 时间戳（Ticks），供云同步冲突判定使用。</summary>
+        public long LastSaveUtcTicks;
+
         public string Checksum;
     }
 }
