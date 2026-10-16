@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using StarPixelSurge.Framework;
+using StarPixelSurge.Map;
 using UnityEngine;
 
 namespace StarPixelSurge.GameCore
@@ -70,12 +71,46 @@ namespace StarPixelSurge.GameCore
 
             if (Vector2.Distance(self, destination) > attackRange)
             {
-                transform.position = Vector2.MoveTowards(self, destination, moveSpeed * Time.deltaTime);
+                var direction = (destination - self).normalized;
+                if (NavigationService.HasInstance && NavigationService.Instance.TryGetDirection(self, out var flow))
+                {
+                    direction = flow;
+                }
+
+                var step = direction * moveSpeed * Time.deltaTime;
+                var next = self + step;
+                if (NavigationService.HasInstance && NavigationService.Instance.IsReady && !IsWalkable(next))
+                {
+                    // 流场不可用或目标被墙阻隔时，沿可行走轴滑动。
+                    var slideX = new Vector2(next.x, self.y);
+                    var slideY = new Vector2(self.x, next.y);
+                    if (IsWalkable(slideX))
+                    {
+                        next = slideX;
+                    }
+                    else if (IsWalkable(slideY))
+                    {
+                        next = slideY;
+                    }
+                    else
+                    {
+                        next = self;
+                    }
+                }
+
+                transform.position = next;
             }
             else
             {
                 Attack();
             }
+        }
+
+        private static bool IsWalkable(Vector2 world)
+        {
+            return !NavigationService.HasInstance
+                   || !NavigationService.Instance.IsReady
+                   || NavigationService.Instance.IsWalkable(world);
         }
 
         private void Attack()

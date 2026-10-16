@@ -50,6 +50,8 @@ namespace StarPixelSurge.GameCore
         private readonly Queue<SpawnRequest> _spawnQueue = new Queue<SpawnRequest>();
         private float _layerTimer;
         private bool _running;
+        private Vector2 _bossCenter;
+        private bool _hasBossCenter;
 
         public int CurrentLayer { get; private set; }
 
@@ -81,6 +83,63 @@ namespace StarPixelSurge.GameCore
         {
             _running = false;
             _spawnQueue.Clear();
+        }
+
+        /// <summary>在玩家附近立即追加一波精英遭遇（用于精英房间）。</summary>
+        public void SpawnEliteEncounter(int count = 5)
+        {
+            var (health, speed) = CurrentScales();
+            for (var i = 0; i < count; i++)
+            {
+                var elite = GetArchetype("elite");
+                _spawnQueue.Enqueue(new SpawnRequest
+                {
+                    HealthScale = health * elite.Health,
+                    SpeedScale = speed * elite.Speed,
+                    ExperienceScale = elite.Experience,
+                    IsBoss = false
+                });
+            }
+        }
+
+        /// <summary>在指定位置附近追加首领遭遇（首领 + 护卫）。用于 BOSS 房间。</summary>
+        public void SpawnBossEncounter(Vector2 center, int guards = 6)
+        {
+            _bossCenter = center;
+            _hasBossCenter = true;
+
+            var (health, speed) = CurrentScales();
+            var boss = GetArchetype("boss");
+            _spawnQueue.Enqueue(new SpawnRequest
+            {
+                HealthScale = health * boss.Health,
+                SpeedScale = speed * boss.Speed,
+                ExperienceScale = boss.Experience,
+                IsBoss = true
+            });
+
+            for (var i = 0; i < guards; i++)
+            {
+                var grunt = GetArchetype("brute");
+                _spawnQueue.Enqueue(new SpawnRequest
+                {
+                    HealthScale = health * grunt.Health,
+                    SpeedScale = speed * grunt.Speed,
+                    ExperienceScale = grunt.Experience,
+                    IsBoss = false
+                });
+            }
+        }
+
+        private (float health, float speed) CurrentScales()
+        {
+            var config = ConfigService.HasInstance ? ConfigService.Instance.GetWave(Mathf.Max(1, CurrentLayer)) : null;
+            if (config != null)
+            {
+                return (config.HealthScale, config.SpeedScale);
+            }
+
+            return (Mathf.Pow(healthGrowth, Mathf.Max(0, CurrentLayer - 1)), Mathf.Pow(speedGrowth, Mathf.Max(0, CurrentLayer - 1)));
         }
 
         private void Update()
@@ -183,13 +242,21 @@ namespace StarPixelSurge.GameCore
                 return;
             }
 
-            var angle = Random.Range(0f, Mathf.PI * 2f);
-            var offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * spawnRadius;
-            var position = (Vector2)_player.position + offset;
+            var origin = (Vector2)_player.position;
+            if (request.IsBoss && _hasBossCenter)
+            {
+                origin = _bossCenter;
+            }
 
+            Vector2 position;
             if (_map != null)
             {
-                position = _map.GetSpawnPosition(_player.position, spawnRadius);
+                position = _map.GetSpawnPosition(origin, spawnRadius);
+            }
+            else
+            {
+                var angle = Random.Range(0f, Mathf.PI * 2f);
+                position = origin + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * spawnRadius;
             }
 
             var instance = PoolManager.Instance.Spawn(monsterPrefab, position, Quaternion.identity);

@@ -17,6 +17,8 @@ namespace StarPixelSurge.UI
         private Text _layerText;
         private Text _killsText;
         private Text _timerText;
+        private Text _messageText;
+        private float _messageTimer;
 
         private static readonly Color TrackColor = new Color(0.08f, 0.08f, 0.12f, 0.85f);
         private static readonly Color HealthColor = new Color(0.95f, 0.25f, 0.35f);
@@ -52,6 +54,9 @@ namespace StarPixelSurge.UI
             _timerText = UiFactory.CreateText(panel, "TimerText", "00:00", 24, TextAnchor.UpperRight, new Color(0.8f, 0.85f, 1f));
             UiFactory.SetAnchoredRect(_timerText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -62f), new Vector2(320f, 30f));
 
+            _messageText = UiFactory.CreateText(panel, "MessageText", string.Empty, 32, TextAnchor.UpperCenter, Color.white);
+            UiFactory.SetAnchoredRect(_messageText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -80f), new Vector2(1000f, 44f));
+
             OnClose();
         }
 
@@ -69,6 +74,7 @@ namespace StarPixelSurge.UI
             EventBus.Subscribe<LevelUpEvent>(OnLevelUp);
             EventBus.Subscribe<WaveLayerChangedEvent>(OnWaveLayerChanged);
             EventBus.Subscribe<MonsterKilledEvent>(OnMonsterKilled);
+            EventBus.Subscribe<RoomMessageEvent>(OnRoomMessage);
         }
 
         private void OnDisable()
@@ -78,6 +84,7 @@ namespace StarPixelSurge.UI
             EventBus.Unsubscribe<LevelUpEvent>(OnLevelUp);
             EventBus.Unsubscribe<WaveLayerChangedEvent>(OnWaveLayerChanged);
             EventBus.Unsubscribe<MonsterKilledEvent>(OnMonsterKilled);
+            EventBus.Unsubscribe<RoomMessageEvent>(OnRoomMessage);
         }
 
         private void Update()
@@ -94,6 +101,15 @@ namespace StarPixelSurge.UI
 
             var kills = GameManager.HasInstance ? GameManager.Instance.Kills : 0;
             _killsText.text = $"击杀 {kills}";
+
+            if (_messageTimer > 0f)
+            {
+                _messageTimer -= Time.unscaledDeltaTime;
+                if (_messageTimer <= 0f && _messageText != null)
+                {
+                    _messageText.text = string.Empty;
+                }
+            }
         }
 
         private static void ConfigureFill(Image fill)
@@ -126,6 +142,18 @@ namespace StarPixelSurge.UI
 
         private void OnMonsterKilled(MonsterKilledEvent evt)
         {
+        }
+
+        private void OnRoomMessage(RoomMessageEvent evt)
+        {
+            if (_messageText == null)
+            {
+                return;
+            }
+
+            _messageText.text = evt.Message;
+            _messageText.color = evt.Color;
+            _messageTimer = 3f;
         }
 
         private void RefreshHealth()

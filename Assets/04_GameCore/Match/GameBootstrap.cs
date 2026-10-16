@@ -81,6 +81,16 @@ namespace StarPixelSurge.GameCore
 
             DestroyRoomMap();
 
+            if (NavigationService.HasInstance)
+            {
+                NavigationService.Instance.ClearMap();
+            }
+
+            if (RoomDirector.HasInstance)
+            {
+                RoomDirector.Instance.ClearMap();
+            }
+
             if (_player != null)
             {
                 _player.gameObject.SetActive(false);
@@ -128,7 +138,8 @@ namespace StarPixelSurge.GameCore
 
             _playerStats = _player.GetComponent<PlayerStats>();
             _playerStats?.Initialize(classConfig);
-            _player.GetComponent<PlayerExperience>()?.ResetProgress();
+            var experience = _player.GetComponent<PlayerExperience>();
+            experience?.ResetProgress();
 
             EnsureUi();
 
@@ -143,6 +154,9 @@ namespace StarPixelSurge.GameCore
             }
 
             UpgradeManager.Instance.BindPlayer(_playerStats);
+
+            NavigationService.Instance.SetMap(_roomMap);
+            RoomDirector.Instance.Configure(_roomMap, _playerStats, experience);
 
             WaveManager.Instance.SetPlayer(_player.transform);
             WaveManager.Instance.SetMonsterPrefab(ResolveMonsterPrefab());

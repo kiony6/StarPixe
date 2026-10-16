@@ -66,4 +66,17 @@ namespace StarPixelSurge.Framework
             Layer = layer;
         }
     }
+
+    /// <summary>界面提示消息（进入特殊房间、触发事件等）。</summary>
+    public readonly struct RoomMessageEvent
+    {
+        public readonly string Message;
+        public readonly Color Color;
+
+        public RoomMessageEvent(string message, Color color)
+        {
+            Message = message;
+            Color = color;
+        }
+    }
 }
