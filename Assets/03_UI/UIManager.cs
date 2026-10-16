@@ -1,130 +1,71 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
+using StarPixelSurge.Framework;
 
 namespace StarPixelSurge.UI
 {
     /// <summary>
-    /// 界面视图基类。由 UIManager 注册与开关。
-    /// 视图组件自身常驻激活以持续接收事件，仅切换内容根节点（contentRoot）的显隐。
+    /// UI管理器：界面弹窗、显示隐藏、层级管理。
     /// </summary>
-    public abstract class UIView : MonoBehaviour
+    public class UIManager : MonoSingleton<UIManager>
     {
-        public bool IsOpen { get; private set; }
+        private readonly Dictionary<string, GameObject> _uiPanels = new Dictionary<string, GameObject>();
+        private readonly Stack<string> _panelStack = new Stack<string>();
 
-        /// <summary>内容根节点。未显式设置时回退为视图自身 GameObject。</summary>
-        protected GameObject contentRoot;
-
-        public virtual void OnOpen()
+        protected override void OnSingletonAwake()
         {
-            IsOpen = true;
-            (contentRoot != null ? contentRoot : gameObject).SetActive(true);
-            OnViewOpened();
+            Debug.Log("[UIManager] UI管理器初始化完成");
         }
 
-        public virtual void OnClose()
+        /// <summary>注册UI面板。</summary>
+        public void RegisterPanel(string panelName, GameObject panel)
         {
-            IsOpen = false;
-            (contentRoot != null ? contentRoot : gameObject).SetActive(false);
-            OnViewClosed();
-        }
-
-        protected virtual void OnViewOpened()
-        {
-        }
-
-        protected virtual void OnViewClosed()
-        {
-        }
-    }
-
-    /// <summary>
-    /// 界面与弹窗管理器。维护视图注册表与单一模态窗口约束。
-    /// </summary>
-    public class UIManager : Framework.MonoSingleton<UIManager>
-    {
-        private readonly Dictionary<Type, UIView> _views = new Dictionary<Type, UIView>();
-        private UIView _activeModal;
-
-        public T Register<T>(T view) where T : UIView
-        {
-            if (view == null)
+            if (!_uiPanels.ContainsKey(panelName))
             {
-                return null;
-            }
-
-            _views[typeof(T)] = view;
-            view.OnClose();
-            return view;
-        }
-
-        public T Get<T>() where T : UIView
-        {
-            return _views.TryGetValue(typeof(T), out var view) ? view as T : null;
-        }
-
-        public void Open<T>() where T : UIView
-        {
-            if (_views.TryGetValue(typeof(T), out var view))
-            {
-                view.OnOpen();
-                // 把打开的视图移到最前面，确保在最上层
-                view.transform.SetAsLastSibling();
-            }
-            else
-            {
-                Debug.LogWarning($"[UIManager] View not registered: {typeof(T).Name}");
+                _uiPanels.Add(panelName, panel);
+                panel.SetActive(false);
             }
         }
 
-        public void Close<T>() where T : UIView
+        /// <summary>显示UI面板。</summary>
+        public void ShowPanel(string panelName)
         {
-            if (_views.TryGetValue(typeof(T), out var view))
+            if (_uiPanels.TryGetValue(panelName, out var panel))
             {
-                view.OnClose();
+                panel.SetActive(true);
+                _panelStack.Push(panelName);
+                Debug.Log($"[UIManager] 显示面板: {panelName}");
             }
         }
 
-        public void PushModal<T>() where T : UIView
+        /// <summary>隐藏UI面板。</summary>
+        public void HidePanel(string panelName)
         {
-            PushModal(Get<T>());
+            if (_uiPanels.TryGetValue(panelName, out var panel))
+            {
+                panel.SetActive(false);
+                Debug.Log($"[UIManager] 隐藏面板: {panelName}");
+            }
         }
 
-        public void PushModal(UIView view)
+        /// <summary>隐藏最上层面板。</summary>
+        public void HideTopPanel()
         {
-            if (view == null)
+            if (_panelStack.Count > 0)
             {
-                return;
+                var top = _panelStack.Pop();
+                HidePanel(top);
             }
-
-            if (_activeModal != null && _activeModal != view)
-            {
-                _activeModal.OnClose();
-            }
-
-            _activeModal = view;
-            view.OnOpen();
         }
 
-        public void PopModal()
+        /// <summary>隐藏所有面板。</summary>
+        public void HideAllPanels()
         {
-            if (_activeModal == null)
+            foreach (var panel in _uiPanels.Values)
             {
-                return;
+                panel.SetActive(false);
             }
-
-            _activeModal.OnClose();
-            _activeModal = null;
-        }
-
-        public void CloseAll()
-        {
-            foreach (var view in _views.Values)
-            {
-                view.OnClose();
-            }
-
-            _activeModal = null;
+            _panelStack.Clear();
         }
     }
 }
