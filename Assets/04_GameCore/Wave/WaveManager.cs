@@ -173,6 +173,14 @@ namespace StarPixelSurge.GameCore
             CurrentLayer++;
             EventBus.Publish(new WaveLayerChangedEvent(CurrentLayer));
 
+            // 每 5 层一个 Boss
+            if (CurrentLayer % 5 == 0)
+            {
+                SpawnBossEncounter(_hasBossCenter ? _bossCenter : Vector2.zero, 4);
+                EventBus.Publish(new BossWaveEvent(CurrentLayer));
+                return;
+            }
+
             var config = ConfigService.HasInstance ? ConfigService.Instance.GetWave(CurrentLayer) : null;
             if (config != null && config.Groups != null && config.Groups.Length > 0)
             {
