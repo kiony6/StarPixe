@@ -13,7 +13,8 @@ namespace StarPixelSurge.GameCore
         Damage = 2,
         CritChance = 3,
         PickupRange = 4,
-        SkillLevel = 5
+        SkillLevel = 5,
+        NewSkill = 6
     }
 
     [Serializable]
@@ -41,10 +42,12 @@ namespace StarPixelSurge.GameCore
     public readonly struct UpgradeOfferedEvent
     {
         public readonly IReadOnlyList<UpgradeOption> Options;
+        public readonly int PendingCount;
 
-        public UpgradeOfferedEvent(IReadOnlyList<UpgradeOption> options)
+        public UpgradeOfferedEvent(IReadOnlyList<UpgradeOption> options, int pendingCount)
         {
             Options = options;
+            PendingCount = pendingCount;
         }
     }
 
@@ -61,6 +64,7 @@ namespace StarPixelSurge.GameCore
 
     /// <summary>
     /// 升级管理器：监听升级事件、生成三选一随机选项、应用所选升级并恢复对局。
+    /// 支持单帧多次升级的排队处理。
     /// </summary>
     public class UpgradeManager : MonoSingleton<UpgradeManager>
     {
@@ -68,6 +72,7 @@ namespace StarPixelSurge.GameCore
         [SerializeField] private int optionsPerLevel = 3;
 
         private readonly List<UpgradeOption> _currentOptions = new List<UpgradeOption>();
+        private int _pendingLevelUps;
 
         public IReadOnlyList<UpgradeOption> CurrentOptions => _currentOptions;
 
@@ -76,6 +81,8 @@ namespace StarPixelSurge.GameCore
         public void BindPlayer(PlayerStats stats)
         {
             playerStats = stats;
+            _pendingLevelUps = 0;
+            _currentOptions.Clear();
         }
 
         private void OnEnable()
@@ -90,13 +97,26 @@ namespace StarPixelSurge.GameCore
 
         private void OnLevelUp(LevelUpEvent evt)
         {
+            _pendingLevelUps++;
+            if (_currentOptions.Count == 0)
+            {
+                ShowNext();
+            }
+            else
+            {
+                Debug.Log($"[UpgradeManager] Level up queued. Pending={_pendingLevelUps}");
+            }
+        }
+
+        private void ShowNext()
+        {
             RollOptions(optionsPerLevel);
             if (GameManager.HasInstance)
             {
                 GameManager.Instance.EnterLevelUp();
             }
 
-            EventBus.Publish(new UpgradeOfferedEvent(_currentOptions));
+            EventBus.Publish(new UpgradeOfferedEvent(_currentOptions, _pendingLevelUps));
         }
 
         public void Choose(int index)
@@ -109,7 +129,14 @@ namespace StarPixelSurge.GameCore
             var option = _currentOptions[index];
             Apply(option);
             _currentOptions.Clear();
+            _pendingLevelUps = Mathf.Max(0, _pendingLevelUps - 1);
             EventBus.Publish(new UpgradeChosenEvent(option));
+
+            if (_pendingLevelUps > 0)
+            {
+                ShowNext();
+                return;
+            }
 
             if (GameManager.HasInstance)
             {
@@ -134,21 +161,23 @@ namespace StarPixelSurge.GameCore
             {
                 foreach (var pair in SkillManager.Instance.SkillLevels)
                 {
-                    var config = ConfigService.HasInstance ? ConfigService.Instance.GetSkill(pair.Key) : null;
+                    var config = ConfigService.Instance.GetSkill(pair.Key);
                     if (config == null || pair.Value >= config.MaxLevel)
                     {
                         continue;
                     }
 
-                    pool.Add(new UpgradeOption($"强化·{config.DisplayName}", $"{config.DisplayName} 等级 +1", UpgradeKind.SkillLevel, 1f, 2, pair.Key));
+                    pool.Add(new UpgradeOption($"强化·{config.DisplayName}", $"{config.DisplayName} 等级 +1（Lv{pair.Value} -> Lv{pair.Value + 1}）", UpgradeKind.SkillLevel, 1f, 2, pair.Key));
                 }
 
-                if (SkillManager.Instance.SkillLevels.Count == 0 && ConfigService.HasInstance)
+                foreach (var config in ConfigService.Instance.GetAllSkills())
                 {
-                    foreach (var config in ConfigService.Instance.GetAllSkills())
+                    if (SkillManager.Instance.HasSkill(config.Id))
                     {
-                        pool.Add(new UpgradeOption($"习得·{config.DisplayName}", $"获得技能 {config.DisplayName}", UpgradeKind.SkillLevel, 1f, 2, config.Id));
+                        continue;
                     }
+
+                    pool.Add(new UpgradeOption($"习得·{config.DisplayName}", $"获得技能 {config.DisplayName}", UpgradeKind.NewSkill, 1f, 2, config.Id));
                 }
             }
 
@@ -165,21 +194,42 @@ namespace StarPixelSurge.GameCore
             switch (option.Kind)
             {
                 case UpgradeKind.MaxHealth:
-                    playerStats?.AddMaxHealth(option.Value);
+                    if (playerStats != null)
+                    {
+                        playerStats.AddMaxHealth(option.Value);
+                    }
+
                     break;
                 case UpgradeKind.MoveSpeed:
-                    playerStats?.AddMoveSpeed(option.Value);
+                    if (playerStats != null)
+                    {
+                        playerStats.AddMoveSpeed(option.Value);
+                    }
+
                     break;
                 case UpgradeKind.Damage:
-                    playerStats?.AddDamageMultiplier(option.Value);
+                    if (playerStats != null)
+                    {
+                        playerStats.AddDamageMultiplier(option.Value);
+                    }
+
                     break;
                 case UpgradeKind.CritChance:
-                    playerStats?.AddCritChance(option.Value);
+                    if (playerStats != null)
+                    {
+                        playerStats.AddCritChance(option.Value);
+                    }
+
                     break;
                 case UpgradeKind.PickupRange:
-                    playerStats?.AddPickupRange(option.Value);
+                    if (playerStats != null)
+                    {
+                        playerStats.AddPickupRange(option.Value);
+                    }
+
                     break;
                 case UpgradeKind.SkillLevel:
+                case UpgradeKind.NewSkill:
                     if (SkillManager.HasInstance)
                     {
                         SkillManager.Instance.LevelUpSkill(option.SkillId);

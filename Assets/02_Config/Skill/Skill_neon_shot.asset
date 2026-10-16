@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97e663b31526e4ca58ca77bee86b9a03, type: 3}
+  m_Name: Skill_neon_shot
+  m_EditorClassIdentifier: 
+  Id: neon_shot
+  DisplayName: 霓虹射击
+  Description: 高频霓虹能量射击。
+  Type: 0
+  Icon: {fileID: 0}
+  BaseDamage: 10
+  DamagePerLevel: 5
+  BaseRange: 9
+  RangePerLevel: 0.3
+  BaseCooldown: 0.9
+  CooldownPerLevel: 0.06
+  MaxLevel: 5
+  EffectId: 
+  ProjectilePrefabPath: 
+  ComboPartners:[]

@@ -85,6 +85,7 @@ namespace StarPixelSurge.Framework
 
         public void CompleteMatch()
         {
+            Time.timeScale = 1f;
             var result = new MatchEndedEvent(Mathf.FloorToInt(MatchElapsed), WaveLayer, Kills);
             SetState(GameState.Result);
             MatchEnded?.Invoke(result);
@@ -96,6 +97,7 @@ namespace StarPixelSurge.Framework
             if (State == GameState.Playing)
             {
                 SetState(GameState.LevelUp);
+                Time.timeScale = 0f;
             }
         }
 
@@ -103,6 +105,7 @@ namespace StarPixelSurge.Framework
         {
             if (State == GameState.LevelUp)
             {
+                Time.timeScale = 1f;
                 SetState(GameState.Playing);
             }
         }

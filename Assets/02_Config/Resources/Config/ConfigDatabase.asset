@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca8396ca2b9a00de195e85700da9dfa7, type: 3}
+  m_Name: ConfigDatabase
+  m_EditorClassIdentifier: 
+  Skills:
+  - {fileID: 11400000, guid: edfda37ef8550ab780992890be1abc6a, type: 2}
+  - {fileID: 11400000, guid: 92456c4fe307581a874cf4ae684e3e49, type: 2}
+  - {fileID: 11400000, guid: dfc1b7ea0d24401634e40444815314e3, type: 2}
+  - {fileID: 11400000, guid: 0c5ca2f3fbcda40a831197450cb20dd2, type: 2}
+  - {fileID: 11400000, guid: bab96d7a4df09874ab9b819f3350c493, type: 2}
+  - {fileID: 11400000, guid: 8292cfde125183abe79121e184b218c9, type: 2}
+  - {fileID: 11400000, guid: 133bc35874de32029618bb38c55b154a, type: 2}
+  - {fileID: 11400000, guid: 7cf40006deb83520d5962b5d9f9d641a, type: 2}
+  - {fileID: 11400000, guid: fe95e9f064e4aae64edfcea321939e5d, type: 2}
+  - {fileID: 11400000, guid: b1d8b5570bda51084cf1184d7f9f5fef, type: 2}
+  - {fileID: 11400000, guid: 232ffb64eb1c7846a669300169be3fac, type: 2}
+  - {fileID: 11400000, guid: 34a31f4e4cc2dd8cc386909d9bf90fa3, type: 2}
+  - {fileID: 11400000, guid: bab42ffedaa952fcb5a0f290a5563ccd, type: 2}
+  - {fileID: 11400000, guid: 7899b998c58949e2d33424fd78009bba, type: 2}
+  - {fileID: 11400000, guid: 14c163516da120b52622f9294033ac41, type: 2}
+  Affixes:[]
+  Combos:
+  - {fileID: 11400000, guid: 02e08bcd5f47d1874c07f8458259fc9c, type: 2}
+  - {fileID: 11400000, guid: 62894a234c3cd422d9d690145129dbe8, type: 2}
+  - {fileID: 11400000, guid: 1d7382b390badd747eab10ce96c54bca, type: 2}
+  - {fileID: 11400000, guid: 2fa0b1beadae4dbe0b4bc42d452410cd, type: 2}
+  - {fileID: 11400000, guid: 425544f483b16f08e388bd5fb8f3574d, type: 2}
+  Classes:
+  - {fileID: 11400000, guid: e9fe79a1b495f56e6685a6bfbee610d9, type: 2}
+  - {fileID: 11400000, guid: 1891bb4313b4c86b0680c0a287c18473, type: 2}
+  - {fileID: 11400000, guid: 31877d6e41af9e9aa1683c08ad832264, type: 2}
+  - {fileID: 11400000, guid: 7e9ffa8a8d789d89e9289f0836145f32, type: 2}
+  Waves:
+  - {fileID: 11400000, guid: b94af3f969a5ca7f12fe8d32b92832cd, type: 2}
+  - {fileID: 11400000, guid: 201fbca9d4a5542e8a67c5f241ff004d, type: 2}
+  - {fileID: 11400000, guid: 2527c7a9d71574b17a541c898c108d22, type: 2}
+  - {fileID: 11400000, guid: 2c0f5480812460dc6b931952db4d9bac, type: 2}
+  - {fileID: 11400000, guid: 2adc5ed6f5ebc32e551931412a8cf6a9, type: 2}
+  - {fileID: 11400000, guid: 27fa45516188238f35841a3936cfcd7f, type: 2}
+  - {fileID: 11400000, guid: f13c2b801fab978ff706b2f34e47ff4a, type: 2}
+  - {fileID: 11400000, guid: 4c4d22dc295d06315e2057ae0e8f04ca, type: 2}
+  - {fileID: 11400000, guid: 4f919da0ba5941c6c9dc072552c98762, type: 2}
+  - {fileID: 11400000, guid: 0e1ff5ae31f76fb9b622ee50be69af19, type: 2}
+  MapThemes: []

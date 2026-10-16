@@ -1,22 +1,46 @@
 using StarPixelSurge.Config;
 using StarPixelSurge.Framework;
+using StarPixelSurge.UI;
 using UnityEngine;
 
 namespace StarPixelSurge.GameCore
 {
     /// <summary>
-    /// 对局启动入口。装配玩家、技能、波次并开始一场单机无尽对局。
+    /// 对局启动入口。装配玩家、技能、波次、UI 并开始一场单机无尽对局。
     /// 未在 Inspector 指定预制体时自动构建运行时占位对象，保证空场景可直接运行。
     /// </summary>
     public class GameBootstrap : MonoBehaviour
     {
+        public static GameBootstrap Instance { get; private set; }
+
+        private const string DefaultClassId = "thunder_mage";
+        private const string DefaultSkillId = "lightning_orb";
+
         [SerializeField] private PlayerController playerPrefab;
         [SerializeField] private GameObject monsterPrefab;
         [SerializeField] private string startingClassId;
         [SerializeField] private string startingSkillId;
         [SerializeField] private bool autoStartOnPlay = true;
+        [SerializeField] private bool buildGameplayUi = true;
 
         private GameObject _runtimeMonsterTemplate;
+        private PlayerController _player;
+        private PlayerStats _playerStats;
+
+        public PlayerStats PlayerStats => _playerStats;
+
+        private void Awake()
+        {
+            Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
 
         private void Start()
         {
@@ -28,27 +52,109 @@ namespace StarPixelSurge.GameCore
 
         public void StartSinglePlayer()
         {
-            var seed = Random.Range(int.MinValue, int.MaxValue);
-            GameManager.Instance.StartMatch(MatchConfig.SinglePlayer(startingClassId, seed));
-
-            var player = CreatePlayer();
-            var stats = player.GetComponent<PlayerStats>();
-
-            var classConfig = ConfigService.Instance.GetClass(startingClassId);
-            stats?.Initialize(classConfig);
-
-            SkillManager.Instance.ResetAll();
-            SkillManager.Instance.SetPlayer(player.transform);
-            if (!string.IsNullOrEmpty(startingSkillId))
+            if (PoolManager.HasInstance)
             {
-                SkillManager.Instance.GrantSkill(startingSkillId);
+                PoolManager.Instance.DespawnAll();
             }
 
-            UpgradeManager.Instance.BindPlayer(stats);
+            var classId = ResolveClassId();
 
-            WaveManager.Instance.SetPlayer(player.transform);
+            if (_player == null)
+            {
+                _player = CreatePlayer();
+            }
+
+            _player.transform.position = Vector3.zero;
+            _playerStats = _player.GetComponent<PlayerStats>();
+
+            var classConfig = ConfigService.Instance.GetClass(classId);
+            _playerStats?.Initialize(classConfig);
+            _player.GetComponent<PlayerExperience>()?.ResetProgress();
+
+            EnsureUi();
+
+            var seed = Random.Range(int.MinValue, int.MaxValue);
+            GameManager.Instance.StartMatch(MatchConfig.SinglePlayer(classId, seed));
+
+            SkillManager.Instance.ResetAll();
+            SkillManager.Instance.SetPlayer(_player.transform);
+            var skillId = ResolveStartingSkill(classConfig);
+            if (!string.IsNullOrEmpty(skillId))
+            {
+                SkillManager.Instance.GrantSkill(skillId);
+            }
+
+            UpgradeManager.Instance.BindPlayer(_playerStats);
+
+            WaveManager.Instance.SetPlayer(_player.transform);
             WaveManager.Instance.SetMonsterPrefab(ResolveMonsterPrefab());
             WaveManager.Instance.StartWaves();
+        }
+
+        /// <summary>重开一局：清空对象池与波次，重置技能后从头开始。</summary>
+        public void RestartMatch()
+        {
+            WaveManager.Instance.StopWaves();
+            StartSinglePlayer();
+        }
+
+        private void EnsureUi()
+        {
+            if (!buildGameplayUi)
+            {
+                return;
+            }
+
+            if (GameplayUIRoot.Instance == null)
+            {
+                var go = new GameObject("GameplayUI");
+                go.AddComponent<GameplayUIRoot>();
+            }
+        }
+
+        private string ResolveClassId()
+        {
+            if (!string.IsNullOrEmpty(startingClassId) && ConfigService.Instance.GetClass(startingClassId) != null)
+            {
+                return startingClassId;
+            }
+
+            if (ConfigService.Instance.GetClass(DefaultClassId) != null)
+            {
+                return DefaultClassId;
+            }
+
+            foreach (var classConfig in ConfigService.Instance.GetAllClasses())
+            {
+                return classConfig.Id;
+            }
+
+            return startingClassId;
+        }
+
+        private string ResolveStartingSkill(ClassConfig classConfig)
+        {
+            if (!string.IsNullOrEmpty(startingSkillId))
+            {
+                return startingSkillId;
+            }
+
+            if (classConfig != null && !string.IsNullOrEmpty(classConfig.StartingSkillId))
+            {
+                return classConfig.StartingSkillId;
+            }
+
+            if (ConfigService.Instance.GetSkill(DefaultSkillId) != null)
+            {
+                return DefaultSkillId;
+            }
+
+            foreach (var skill in ConfigService.Instance.GetAllSkills())
+            {
+                return skill.Id;
+            }
+
+            return null;
         }
 
         private PlayerController CreatePlayer()
@@ -73,6 +179,7 @@ namespace StarPixelSurge.GameCore
             collider.radius = 0.4f;
 
             go.AddComponent<PlayerStats>();
+            go.AddComponent<PlayerExperience>();
             return go.AddComponent<PlayerController>();
         }
 

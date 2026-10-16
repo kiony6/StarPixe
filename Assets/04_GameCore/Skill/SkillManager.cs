@@ -28,6 +28,7 @@ namespace StarPixelSurge.GameCore
         private readonly HashSet<string> _unlockedCombos = new HashSet<string>();
 
         private Transform _player;
+        private GameObject _runtimeProjectileTemplate;
 
         public event Action<ComboConfig> ComboUnlocked;
 
@@ -135,7 +136,7 @@ namespace StarPixelSurge.GameCore
                 return false;
             }
 
-            var prefab = ResolvePrefab(config.ProjectilePrefabPath);
+            var prefab = ResolveProjectilePrefab(config.ProjectilePrefabPath);
             if (prefab == null)
             {
                 return false;
@@ -230,6 +231,32 @@ namespace StarPixelSurge.GameCore
         private static GameObject ResolvePrefab(string path)
         {
             return string.IsNullOrEmpty(path) ? null : Resources.Load<GameObject>(path);
+        }
+
+        /// <summary>
+        /// 解析技能弹道预制体。未配置资源时回退到运行时生成的占位弹道，保证原型可直接游玩。
+        /// </summary>
+        private GameObject ResolveProjectilePrefab(string path)
+        {
+            var prefab = ResolvePrefab(path);
+            return prefab != null ? prefab : GetRuntimeProjectileTemplate();
+        }
+
+        private GameObject GetRuntimeProjectileTemplate()
+        {
+            if (_runtimeProjectileTemplate != null)
+            {
+                return _runtimeProjectileTemplate;
+            }
+
+            var go = new GameObject("Projectile_Runtime");
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = RuntimeSprite.CreateSquare(new Color(0.6f, 0.95f, 1f), 6);
+            renderer.sortingOrder = 8;
+            go.AddComponent<Projectile>();
+            go.SetActive(false);
+            _runtimeProjectileTemplate = go;
+            return go;
         }
     }
 }

@@ -82,6 +82,8 @@ namespace StarPixelSurge.Config
 
         public IEnumerable<SkillConfig> GetAllSkills() => _skills.Values;
 
+        public IEnumerable<ClassConfig> GetAllClasses() => _classes.Values;
+
         public IEnumerable<AffixConfig> GetAllAffixes() => _affixes.Values;
 
         public IEnumerable<ComboConfig> GetAllCombos() => _combos.Values;

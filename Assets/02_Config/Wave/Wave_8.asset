@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5652d3947e24e44009117afbe2e8ebf5, type: 3}
+  m_Name: Wave_8
+  m_EditorClassIdentifier: 
+  Layer: 8
+  ThemeId: neon_city
+  Groups:
+  - MonsterId: grunt
+    PrefabPath: 
+    Count: 20
+    SpawnInterval: 0.32
+  - MonsterId: runner
+    PrefabPath: 
+    Count: 10
+    SpawnInterval: 0.3
+  - MonsterId: brute
+    PrefabPath: 
+    Count: 8
+    SpawnInterval: 0.6
+  - MonsterId: elite
+    PrefabPath: 
+    Count: 5
+    SpawnInterval: 1
+  HealthScale: 2.3
+  SpeedScale: 1.35
+  CountScale: 1.7
+  HasBoss: 0

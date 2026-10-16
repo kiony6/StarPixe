@@ -59,6 +59,15 @@ namespace StarPixelSurge.GameCore
                 baseDamageMultiplier = classConfig.BaseDamageMultiplier;
             }
 
+            _bonusHealth = 0f;
+            _bonusMoveSpeed = 0f;
+            _bonusDamage = 0f;
+            _bonusCrit = 0f;
+            _bonusPickup = 0f;
+            _multHealth = 1f;
+            _multMoveSpeed = 1f;
+            _multDamage = 1f;
+
             Recalculate();
             CurrentHealth = MaxHealth;
             Broadcast();

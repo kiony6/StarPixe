@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97e663b31526e4ca58ca77bee86b9a03, type: 3}
+  m_Name: Skill_flame_burst
+  m_EditorClassIdentifier: 
+  Id: flame_burst
+  DisplayName: 烈焰爆裂
+  Description: 在目标位置引发火焰爆炸。
+  Type: 2
+  Icon: {fileID: 0}
+  BaseDamage: 18
+  DamagePerLevel: 8
+  BaseRange: 3.5
+  RangePerLevel: 0.2
+  BaseCooldown: 2.5
+  CooldownPerLevel: 0.15
+  MaxLevel: 5
+  EffectId: 
+  ProjectilePrefabPath: 
+  ComboPartners:
+  - meteor

@@ -51,7 +51,7 @@ namespace StarPixelSurge.GameCore
                 return;
             }
 
-            if (GameManager.HasInstance && GameManager.Instance.State == GameState.Paused)
+            if (GameManager.HasInstance && GameManager.Instance.State != GameState.Playing)
             {
                 return;
             }

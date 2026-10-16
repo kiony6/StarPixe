@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97e663b31526e4ca58ca77bee86b9a03, type: 3}
+  m_Name: Skill_star_beam
+  m_EditorClassIdentifier: 
+  Id: star_beam
+  DisplayName: 星辰射线
+  Description: 贯穿战场的星辰射线。
+  Type: 0
+  Icon: {fileID: 0}
+  BaseDamage: 17
+  DamagePerLevel: 8
+  BaseRange: 11
+  RangePerLevel: 0.4
+  BaseCooldown: 2.2
+  CooldownPerLevel: 0.14
+  MaxLevel: 5
+  EffectId: 
+  ProjectilePrefabPath: 
+  ComboPartners:
+  - holy_light

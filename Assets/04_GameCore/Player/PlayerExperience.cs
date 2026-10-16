@@ -11,7 +11,6 @@ namespace StarPixelSurge.GameCore
         [SerializeField] private int level = 1;
         [SerializeField] private float baseExperienceToNext = 5f;
         [SerializeField] private float growthFactor = 1.35f;
-        [SerializeField] private float killBonusPerLevel = 0.1f;
 
         private float _current;
 
@@ -31,6 +30,13 @@ namespace StarPixelSurge.GameCore
         private void OnDisable()
         {
             EventBus.Unsubscribe<MonsterKilledEvent>(OnMonsterKilled);
+        }
+
+        public void ResetProgress()
+        {
+            level = 1;
+            _current = 0f;
+            EventBus.Publish(new ExperienceGainedEvent(0f, _current, Required));
         }
 
         public void AddExperience(float amount)
