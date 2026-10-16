@@ -266,7 +266,13 @@ namespace StarPixelSurge.Network
             LocalPlayerId = 0;
             State = RoomState.Lobby;
             _room.SetHost(LocalPlayerId);
-            Debug.Log($"[NetManager] 主机已启动，PlayerId: {LocalPlayerId}");
+
+            // 初始化UDP传输
+            _transport = CreateTransport();
+            _transport.Start(LocalPlayerId);
+            _transport.MessageReceived += OnMessage;
+
+            Debug.Log($"[NetManager] 主机已启动，PlayerId: {LocalPlayerId}, 端口: {HostPort}");
             OnRosterChanged();
         }
 
@@ -276,8 +282,15 @@ namespace StarPixelSurge.Network
             IsHost = false;
             LocalPlayerId = 1;
             State = RoomState.Lobby;
+            RemoteHost = ip;
+            RemotePort = port;
+
+            // 初始化UDP传输
+            _transport = CreateTransport();
+            _transport.Start(LocalPlayerId);
+            _transport.MessageReceived += OnMessage;
+
             Debug.Log($"[NetManager] 正在连接到服务器 {ip}:{port}...");
-            // TODO: 实际的UDP连接逻辑
             Debug.Log($"[NetManager] 连接成功，PlayerId: {LocalPlayerId}");
             OnRosterChanged();
         }
@@ -288,6 +301,15 @@ namespace StarPixelSurge.Network
             State = RoomState.Idle;
             IsHost = false;
             LocalPlayerId = -1;
+
+            // 停止Transport
+            if (_transport != null)
+            {
+                _transport.MessageReceived -= OnMessage;
+                _transport.Stop();
+                _transport = null;
+            }
+
             Debug.Log("[NetManager] 已断开连接");
             OnRosterChanged();
         }

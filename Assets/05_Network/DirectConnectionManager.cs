@@ -36,6 +36,11 @@ namespace StarPixelSurge.Network
             ServerPort = port;
             Debug.Log($"[Direct] 主机已启动，端口: {port}");
 
+            // 配置NetManager使用UDP传输
+            NetManager.Instance.UseUdp = true;
+            NetManager.Instance.HostPort = port;
+            NetManager.Instance.RemotePort = port;
+
             // 调用NetManager启动主机
             NetManager.Instance.StartLocalHost();
 
@@ -53,6 +58,11 @@ namespace StarPixelSurge.Network
             ServerIP = ip;
             ServerPort = port;
             Debug.Log($"[Direct] 正在连接到 {ip}:{port}...");
+
+            // 配置NetManager
+            NetManager.Instance.UseUdp = true;
+            NetManager.Instance.RemoteHost = ip;
+            NetManager.Instance.RemotePort = port;
 
             // 调用NetManager连接服务器
             NetManager.Instance.ConnectToServer(ip, port);
