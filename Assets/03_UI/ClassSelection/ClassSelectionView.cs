@@ -206,7 +206,7 @@ namespace StarPixelSurge.UI
         {
             if (GameplayUIRoot.Instance != null)
             {
-                GameplayUIRoot.Instance.ShowRoom();
+                GameplayUIRoot.Instance.ShowOnlineLobby();
             }
         }
 

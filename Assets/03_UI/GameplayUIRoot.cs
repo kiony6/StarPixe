@@ -13,6 +13,8 @@ namespace StarPixelSurge.UI
         private Canvas _canvas;
         private ClassSelectionView _classSelection;
         private RoomView _room;
+        private OnlineLobbyView _onlineLobby;
+        private RoomLobbyView _roomLobby;
         private HudView _hud;
         private BossHealthBarView _bossBar;
         private UpgradeSelectionView _upgrade;
@@ -55,6 +57,14 @@ namespace StarPixelSurge.UI
             _room = CreateView<RoomView>("RoomView");
             _room.Build(_canvas.transform);
             UIManager.Instance.Register(_room);
+
+            _onlineLobby = CreateView<OnlineLobbyView>("OnlineLobbyView");
+            _onlineLobby.Build(_canvas.transform);
+            UIManager.Instance.Register(_onlineLobby);
+
+            _roomLobby = CreateView<RoomLobbyView>("RoomLobbyView");
+            _roomLobby.Build(_canvas.transform);
+            UIManager.Instance.Register(_roomLobby);
 
             _hud = CreateView<HudView>("HudView");
             _hud.Build(_canvas.transform);
@@ -120,6 +130,25 @@ namespace StarPixelSurge.UI
             UIManager.Instance.Close<ClassSelectionView>();
             UIManager.Instance.Close<AffixPreviewView>();
             UIManager.Instance.Open<RoomView>();
+        }
+
+        /// <summary>进入联机大厅（创建/加入房间）。</summary>
+        public void ShowOnlineLobby()
+        {
+            UIManager.Instance.Close<HudView>();
+            UIManager.Instance.Close<BossHealthBarView>();
+            UIManager.Instance.Close<ResultView>();
+            UIManager.Instance.Close<ClassSelectionView>();
+            UIManager.Instance.Close<RoomView>();
+            UIManager.Instance.Close<AffixPreviewView>();
+            UIManager.Instance.Open<OnlineLobbyView>();
+        }
+
+        /// <summary>进入房间大厅（玩家列表、准备开始）。</summary>
+        public void ShowRoomLobby()
+        {
+            UIManager.Instance.Close<OnlineLobbyView>();
+            UIManager.Instance.Open<RoomLobbyView>();
         }
 
         public HudView Hud => _hud;

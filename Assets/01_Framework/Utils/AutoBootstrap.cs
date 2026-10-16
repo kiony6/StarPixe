@@ -1,4 +1,5 @@
 using StarPixelSurge.Audio;
+using StarPixelSurge.Config;
 using StarPixelSurge.Effect;
 using StarPixelSurge.GameCore;
 using StarPixelSurge.Map;
@@ -48,6 +49,20 @@ namespace StarPixelSurge.Framework
             {
                 var go = new GameObject("NetManager");
                 go.AddComponent<NetManager>();
+            }
+
+            // 配置服务与对象池在业务代码中以 HasInstance 前置判断使用，不会被惰性创建。
+            // 若缺省，职业/技能/波次配置读取与怪物生成都会静默失效。
+            if (!ConfigService.HasInstance)
+            {
+                var go = new GameObject("ConfigService");
+                go.AddComponent<ConfigService>();
+            }
+
+            if (!PoolManager.HasInstance)
+            {
+                var go = new GameObject("PoolManager");
+                go.AddComponent<PoolManager>();
             }
         }
 

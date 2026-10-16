@@ -173,6 +173,9 @@ namespace StarPixelSurge.UI
         private Transform BuildRoomPanel(Transform parent)
         {
             var panel = UiFactory.CreateRect(parent, "RoomPanel");
+            // RoomPanel 是 controls/status 的锚点容器，必须铺满背景；
+            // 否则默认 100x100 的居中矩形会把底部锚点拉到屏幕中央。
+            UiFactory.Stretch((RectTransform)panel);
 
             var slotContainer = UiFactory.CreateRect(panel, "MemberSlots");
             UiFactory.SetAnchoredRect(slotContainer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1400f, 420f));

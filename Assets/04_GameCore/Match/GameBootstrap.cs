@@ -201,7 +201,8 @@ namespace StarPixelSurge.GameCore
         /// </summary>
         private void ConfigureNetworkPlayers(MatchMode mode, bool isHost)
         {
-            if (mode != MatchMode.Multiplayer || !NetManager.HasInstance)
+            // 房间/大厅阶段尚未生成本机角色，此时主机选举或迁移触发本方法只需清空网络装配。
+            if (mode != MatchMode.Multiplayer || !NetManager.HasInstance || _player == null)
             {
                 ResetNetworkPlayers();
                 return;
