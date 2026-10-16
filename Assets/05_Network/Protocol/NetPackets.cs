@@ -35,6 +35,27 @@ namespace StarPixelSurge.Network
         JoinRequest = 8
     }
 
+    /// <summary>
+    /// 成员的传输层端点。名册随包下发各成员端点，使任一成员在房主迁移后
+    /// 都能直接寻址其余成员，而无需依赖旧的房主地址。
+    /// </summary>
+    [Serializable]
+    public struct PeerEndPoint
+    {
+        public int PlayerId;
+        public string Address;
+        public int Port;
+
+        public PeerEndPoint(int playerId, string address, int port)
+        {
+            PlayerId = playerId;
+            Address = address ?? string.Empty;
+            Port = port;
+        }
+
+        public bool IsValid => !string.IsNullOrEmpty(Address) && Port > 0;
+    }
+
     /// <summary>客户端上报的单帧玩家输入。</summary>
     [Serializable]
     public struct PlayerInputPacket

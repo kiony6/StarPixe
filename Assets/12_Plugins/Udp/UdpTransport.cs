@@ -16,7 +16,7 @@ namespace StarPixelSurge.Network
     /// 因此控制类消息（准备/名册/开局）依赖上层重发与名册周期同步容忍丢包。
     /// 单数据报超过 <see cref="MaxDatagramBytes"/> 会被拒绝，快照分片不在本期范围。
     /// </summary>
-    public class UdpTransport : ITransport
+    public class UdpTransport : ITransport, IPeerDirectory
     {
         private const int HeaderBytes = 4;
         private const int MaxDatagramBytes = 1200;
@@ -39,6 +39,9 @@ namespace StarPixelSurge.Network
 
         public event Action<int, byte[]> MessageReceived;
 
+        /// <summary>观测到某成员的来源端点（每收到一个数据报触发一次）。</summary>
+        public event Action<int, string, int> PeerObserved;
+
         /// <summary>房主：指定绑定端口。</summary>
         public void SetLocalPort(int port)
         {
@@ -49,6 +52,43 @@ namespace StarPixelSurge.Network
         public void SetHostEndPoint(string host, int port)
         {
             _hostEndPoint = ResolveEndPoint(host, port);
+        }
+
+        /// <summary>登记/更新某成员的端点，供广播与迁移后寻址。</summary>
+        public void RegisterPeer(int playerId, string address, int port)
+        {
+            if (playerId < 0 || string.IsNullOrEmpty(address) || port <= 0)
+            {
+                return;
+            }
+
+            _endpoints[playerId] = ResolveEndPoint(address, port);
+        }
+
+        public bool TryGetPeer(int playerId, out string address, out int port)
+        {
+            address = null;
+            port = 0;
+            if (!_endpoints.TryGetValue(playerId, out var endpoint) || endpoint == null)
+            {
+                return false;
+            }
+
+            address = endpoint.Address.ToString();
+            port = endpoint.Port;
+            return true;
+        }
+
+        /// <summary>重定向上报目标端点（房主迁移后由客户端调用）。</summary>
+        public bool TrySetHost(string address, int port)
+        {
+            if (string.IsNullOrEmpty(address) || port <= 0)
+            {
+                return false;
+            }
+
+            _hostEndPoint = ResolveEndPoint(address, port);
+            return true;
         }
 
         public void Start(int localPlayerId)
@@ -138,7 +178,7 @@ namespace StarPixelSurge.Network
                     }
 
                     var senderId = ReadInt(data, 0);
-                    Remember(remote, senderId);
+                    Observe(remote, senderId);
 
                     var payload = new byte[data.Length - HeaderBytes];
                     Buffer.BlockCopy(data, HeaderBytes, payload, 0, payload.Length);
@@ -195,15 +235,21 @@ namespace StarPixelSurge.Network
             }
         }
 
-        private void Remember(IPEndPoint remote, int senderId)
+        private void Observe(IPEndPoint remote, int senderId)
         {
-            // 仅房主维护广播端点表：按发送者 ID 记录其最新端点，供快照广播定向发送。
-            if (remote == null || !IsHost())
+            if (remote == null || senderId < 0)
             {
                 return;
             }
 
-            _endpoints[senderId] = remote;
+            // 房主记录来源端点即等价于登记客户端，便于快照广播定向发送。
+            if (IsHost())
+            {
+                _endpoints[senderId] = remote;
+            }
+
+            // 无论角色都向订阅者暴露来源端点，供上层刷新房主地址、跨过迁移。
+            PeerObserved?.Invoke(senderId, remote.Address.ToString(), remote.Port);
         }
 
         private bool IsHost()

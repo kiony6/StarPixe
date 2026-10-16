@@ -29,8 +29,10 @@ namespace StarPixelSurge.Network
         private readonly HostMigrationService _migration = new HostMigrationService();
         private readonly List<int> _playersCache = new List<int>();
         private readonly Dictionary<int, string> _classByPlayer = new Dictionary<int, string>();
+        private readonly Dictionary<int, PeerEndPoint> _peerEndPoints = new Dictionary<int, PeerEndPoint>();
 
         private ITransport _transport;
+        private IPeerDirectory _directory;
         private float _lobbyResendTimer;
         private float _matchStartResendTimer;
         private float _matchStartResendElapsed;
@@ -298,6 +300,35 @@ namespace StarPixelSurge.Network
             _transport.MessageReceived += OnMessage;
             _transport.Start(LocalPlayerId);
             _transport.HostId = IsHost ? LocalPlayerId : _transport.HostId;
+
+            _directory = _transport as IPeerDirectory;
+            if (_directory != null)
+            {
+                _directory.PeerObserved += OnPeerObserved;
+            }
+        }
+
+        /// <summary>观测到成员来源端点：刷新房主地址，跨过房主迁移。</summary>
+        private void OnPeerObserved(int playerId, string address, int port)
+        {
+            if (string.IsNullOrEmpty(address) || port <= 0)
+            {
+                return;
+            }
+
+            _peerEndPoints[playerId] = new PeerEndPoint(playerId, address, port);
+
+            // 当前房主换了地址（迁移或 NAT 重绑定）时立即重定向上报目标。
+            if (_directory != null && !IsHost && playerId == _migration.CurrentHostId)
+            {
+                _directory.TrySetHost(address, port);
+            }
+        }
+
+        /// <summary>取某成员已知端点，优先使用名册下发的端点，回退到观测值。</summary>
+        private bool TryGetPeerEndPoint(int playerId, out PeerEndPoint endpoint)
+        {
+            return _peerEndPoints.TryGetValue(playerId, out endpoint) && endpoint.IsValid;
         }
 
         private ITransport CreateTransport()
@@ -326,6 +357,14 @@ namespace StarPixelSurge.Network
         {
             _lobbyResendTimer = 0f;
             _resendingMatchStart = false;
+
+            if (_directory != null)
+            {
+                _directory.PeerObserved -= OnPeerObserved;
+                _directory = null;
+            }
+
+            _peerEndPoints.Clear();
 
             if (_transport == null)
             {
@@ -389,13 +428,18 @@ namespace StarPixelSurge.Network
 
                     break;
                 case NetworkMessageType.Roster:
-                    if (NetworkSerializer.TryDeserializeRoster(payload, out var rosterHost, out var rosterMembers))
+                    if (NetworkSerializer.TryDeserializeRoster(payload, out var rosterHost, out var rosterMembers, out var rosterEndPoints))
                     {
                         _room.SyncMembers(rosterHost, rosterMembers);
                         _migration.SetHost(rosterHost);
+                        ApplyRosterEndPoints(rosterEndPoints);
                         if (rosterHost != LocalPlayerId)
                         {
                             _transport.HostId = rosterHost;
+                            if (TryGetPeerEndPoint(rosterHost, out var hostEndPoint))
+                            {
+                                _directory?.TrySetHost(hostEndPoint.Address, hostEndPoint.Port);
+                            }
                         }
                     }
 
@@ -429,6 +473,41 @@ namespace StarPixelSurge.Network
             BeginLocalMatch(seed, false, classId);
         }
 
+        /// <summary>缓存名册下发的成员端点，并让新人成为房主后可据此寻址其余成员。</summary>
+        private void ApplyRosterEndPoints(PeerEndPoint[] rosterEndPoints)
+        {
+            if (rosterEndPoints == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < rosterEndPoints.Length; i++)
+            {
+                var endpoint = rosterEndPoints[i];
+                if (endpoint.IsValid)
+                {
+                    _peerEndPoints[endpoint.PlayerId] = endpoint;
+                }
+            }
+        }
+
+        /// <summary>把已知成员端点灌入传输层寻址表，使新房主可立即广播给其余成员。</summary>
+        private void RegisterKnownPeers()
+        {
+            if (_directory == null)
+            {
+                return;
+            }
+
+            foreach (var pair in _peerEndPoints)
+            {
+                if (pair.Key != LocalPlayerId && pair.Value.IsValid)
+                {
+                    _directory.RegisterPeer(pair.Key, pair.Value.Address, pair.Value.Port);
+                }
+            }
+        }
+
         private void OnHostElected(int newHostId, int frameIndex)
         {
             var frame = FrameSyncService.Instance;
@@ -444,14 +523,26 @@ namespace StarPixelSurge.Network
                     () => GameManager.HasInstance ? GameManager.Instance.WaveLayer : 0,
                     () => frame.RngState);
 
-                // 作为新任房主向其余成员公告迁移结果，使其收敛到同一时间轴。
-                _transport.Broadcast(NetworkSerializer.SerializeMigration(LocalPlayerId, frame.CurrentFrameIndex));
+                // 关键修复：新房主原为客户端，寻址表为空。先把名册下发的成员端点灌入传输层，
+                // 否则迁移公告无法抵达其余成员，整局会在此断裂。
+                RegisterKnownPeers();
+
+                // 作为新任房主向其余成员公告迁移结果，携带自身端点帮助对方重定向上报目标。
+                var advertised = TryGetPeerEndPoint(LocalPlayerId, out var own) ? own : default;
+                _transport.Broadcast(NetworkSerializer.SerializeMigration(
+                    LocalPlayerId, frame.CurrentFrameIndex, advertised.Address, advertised.Port));
             }
             else
             {
                 IsHost = false;
                 _transport.HostId = newHostId;
                 frame.Configure(_transport, NetworkRole.Client, Mathf.Max(0, frameIndex));
+
+                // 把上报目标切到新房主，使本地输入能继续送达。
+                if (TryGetPeerEndPoint(newHostId, out var newHostEndPoint))
+                {
+                    _directory?.TrySetHost(newHostEndPoint.Address, newHostEndPoint.Port);
+                }
 
                 if (_migration.HasConfirmedSnapshot)
                 {
@@ -477,16 +568,29 @@ namespace StarPixelSurge.Network
 
             RoomUpdated?.Invoke();
 
-            // 房主对外发布权威名册，客户端据此对齐成员集合。
+            // 房主对外发布权威名册，客户端据此对齐成员集合，并缓存各成员端点
+            // 以便任一客户端在房主迁移后都能直接寻址其余成员。
             if (IsHost && _transport != null && State != RoomState.Idle)
             {
-                var ids = new int[_room.Members.Count];
-                for (var i = 0; i < ids.Length; i++)
+                var count = _room.Members.Count;
+                var ids = new int[count];
+                var endpoints = new List<PeerEndPoint>(count);
+                for (var i = 0; i < count; i++)
                 {
-                    ids[i] = _room.Members[i].PlayerId;
+                    var memberId = _room.Members[i].PlayerId;
+                    ids[i] = memberId;
+
+                    if (_directory != null && _directory.TryGetPeer(memberId, out var address, out var port))
+                    {
+                        endpoints.Add(new PeerEndPoint(memberId, address, port));
+                    }
+                    else if (TryGetPeerEndPoint(memberId, out var known))
+                    {
+                        endpoints.Add(known);
+                    }
                 }
 
-                _transport.Broadcast(NetworkSerializer.SerializeRoster(LocalPlayerId, ids));
+                _transport.Broadcast(NetworkSerializer.SerializeRoster(LocalPlayerId, ids, endpoints.ToArray()));
             }
 
             // 对局进行中房主补齐新加入玩家的分身。
